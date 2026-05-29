@@ -131,11 +131,12 @@ td.num{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
   .method-name{font-size:.75rem;line-height:1.25;word-break:break-word}
 
   /* Header & controls */
-  h1{font-size:1.2rem;margin-bottom:.4rem!important}
-  h2{font-size:1.05rem}
-  .container{padding:.5rem}
-  header{padding:.5rem 0 .7rem}
-  header p{font-size:.72rem!important;margin-bottom:.5rem!important}
+  h1{font-size:1.1rem;margin-bottom:.3rem!important}
+  h2{font-size:1rem}
+  .container{padding:.4rem}
+  header{padding:.4rem 0 .5rem}
+  header h1{display:none}
+  header p{font-size:.68rem!important;margin-bottom:.4rem!important}
   .osrs-logo{width:min(220px,60vw)!important;margin-bottom:.2rem!important}
   #price-status{font-size:.68rem;margin-top:.3rem}
   #no-player{padding:1rem .5rem}
@@ -165,10 +166,10 @@ td.num{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
   /* XP info */
   #xp-info{padding:.5rem .6rem;gap:.3rem .8rem;font-size:.78rem;flex-direction:row;flex-wrap:wrap}
 
-  /* Skill tabs - horizontal scroll strip on mobile */
-  .skill-tabs{gap:.25rem!important;margin:.8rem 0 .3rem!important;flex-wrap:nowrap!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;padding-bottom:.4rem;scrollbar-width:thin}
-  .skill-tab{padding:.3rem .5rem;font-size:.72rem;gap:.2rem;flex-shrink:0;white-space:nowrap}
-  .skill-tab img{width:16px;height:16px}
+  /* Skill tabs - compact wrapped grid on mobile */
+  .skill-tabs{gap:2px!important;margin:.4rem 0 .2rem!important;flex-wrap:wrap!important;overflow-x:visible!important}
+  .skill-tab{padding:.2rem .3rem;font-size:.6rem;gap:2px;flex-shrink:0;border-width:1px}
+  .skill-tab img{width:13px;height:13px}
 
   /* Custom XP row */
   .custom-xp-row{gap:.3rem .4rem;align-items:center;flex-wrap:wrap}
@@ -2520,6 +2521,10 @@ document.getElementById('xp-bonus').addEventListener('input',()=>{
 // ── Init ──
 renderSkillTabs();
 fetchPrices();
+// Auto-select Overall on mobile so users see data immediately
+if(window.innerWidth <= 600){
+  selectSkill('Overall');
+}
 </script>
 </body>
 </html>
