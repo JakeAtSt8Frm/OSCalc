@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSRS Skill Calculator & XP/GP Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#14100a;--panel:#2b2117;--panel-border:#6f5331;--gold:#ff981f;
+  --text:#f3dec4;--muted:#b89a73;--positive:#48e245;--negative:#ff5b4f;
+  --btn:#5b371c;--btn-hover:#7a4b24;--highlight:#3b2b1c;--parchment:#d8bd86;
+  --stone:#1b1712;--rune-blue:#76c8ff;
+}
+body{
+  background:
+    radial-gradient(circle at 20% 0%,rgba(255,152,31,.12),transparent 28rem),
+    linear-gradient(rgba(20,16,10,.92),rgba(20,16,10,.96)),
+    repeating-linear-gradient(45deg,#17120b 0,#17120b 12px,#1f180f 12px,#1f180f 24px);
+  color:var(--text);
+  font-family:Georgia,'Times New Roman',serif;
+  min-height:100vh;
+}
+a{color:var(--gold)}
+h1{color:var(--gold);font-size:2rem;text-shadow:2px 2px 0 #000,0 0 8px rgba(255,152,31,.28);letter-spacing:.02em}
+h2{color:var(--gold);font-size:1.3rem;margin-bottom:.5rem;text-shadow:1px 1px 0 #000}
+h3{color:var(--gold);font-size:1.1rem;text-shadow:1px 1px 0 #000}
+.container{max-width:1200px;margin:0 auto;padding:1rem}
+header{
+  background:
+    linear-gradient(180deg,rgba(60,41,20,.96),rgba(18,14,9,.98)),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0,rgba(255,255,255,.03) 2px,transparent 2px,transparent 12px);
+  border-bottom:4px ridge var(--panel-border);
+  box-shadow:0 6px 18px rgba(0,0,0,.45);
+  padding:1.2rem 0 1.4rem;
+  text-align:center;
+}
+header h1{margin-bottom:1rem}
+.osrs-logo{width:min(360px,80vw);height:auto;image-rendering:auto;filter:drop-shadow(3px 5px 2px #000);margin-bottom:.35rem}
+.search-row{display:flex;justify-content:center;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap}
+.search-row input{background:#0f0b07;border:2px ridge var(--panel-border);color:var(--text);padding:.6rem 1rem;border-radius:2px;font-size:1rem;width:280px;font-family:inherit}
+.search-row input:focus{outline:none;border-color:var(--gold)}
+.search-row button{background:linear-gradient(#7a4b24,#3f2613);color:var(--gold);border:2px ridge var(--panel-border);padding:.6rem 1.5rem;border-radius:2px;cursor:pointer;font-size:1rem;font-weight:700;font-family:inherit;text-shadow:1px 1px 0 #000}
+.search-row button:hover{background:var(--btn-hover)}
+#price-status{color:var(--muted);font-size:.8rem;margin-top:.4rem}
+#error-msg{background:#3a1111;border:1px solid #662222;color:#ff6666;padding:.8rem 1rem;border-radius:4px;margin:1rem auto;max-width:600px;text-align:center}
+#loading{text-align:center;color:var(--gold);padding:2rem;font-size:1.2rem}
+.hidden{display:none!important}
+
+/* Player Stats Grid */
+#player-section{margin-top:1.5rem}
+#player-header{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+#player-header h2{margin:0}
+.combat-level{background:var(--panel);border:2px ridge var(--panel-border);padding:.3rem .8rem;border-radius:2px;color:var(--gold);font-weight:600}
+.quest-points{background:var(--panel);border:2px ridge var(--panel-border);padding:.3rem .8rem;border-radius:2px;color:var(--rune-blue)}
+#stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.5rem}
+.skill-card{background:linear-gradient(180deg,#332619,#221911);border:2px ridge var(--panel-border);border-radius:2px;padding:.6rem .8rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;transition:all .15s;box-shadow:inset 0 1px rgba(255,255,255,.05)}
+.skill-card:hover,.skill-card.active{border-color:var(--gold);background:linear-gradient(180deg,#4a341d,#2b1e12)}
+.skill-icon{width:24px;height:24px;image-rendering:pixelated}
+.skill-info{flex:1;min-width:0}
+.skill-name{font-size:.85rem;color:var(--muted)}
+.skill-level{font-size:1.1rem;font-weight:700;color:var(--text)}
+.skill-xp{font-size:.7rem;color:var(--muted)}
+
+/* Methods Section */
+#methods-section{margin-top:1.5rem;background:linear-gradient(180deg,#2a2016,#19130d);border:4px ridge var(--panel-border);border-radius:2px;padding:1.2rem;box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,201,109,.08)}
+.methods-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem;margin-bottom:1rem}
+.methods-controls{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.methods-controls label{color:var(--muted);font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.3rem}
+.methods-controls select{background:#0f0b07;border:2px ridge var(--panel-border);color:var(--text);padding:.3rem .5rem;border-radius:2px;font-size:.85rem;font-family:inherit}
+.methods-controls input[type=number]{background:#0f0b07;border:2px ridge var(--panel-border);color:var(--text);padding:.3rem .5rem;border-radius:2px;width:60px;font-size:.85rem;font-family:inherit}
+#xp-info{background:rgba(216,189,134,.12);border:2px ridge var(--panel-border);border-radius:2px;padding:.8rem 1rem;margin-bottom:1rem;display:flex;gap:2rem;flex-wrap:wrap;font-size:.9rem}
+#xp-info span{color:var(--muted)}
+#xp-info strong{color:var(--text)}
+.category-header{color:var(--gold);font-size:.95rem;font-weight:600;padding:.5rem .2rem;margin-top:.8rem;border-bottom:1px solid var(--panel-border)}
+.category-header:first-child{margin-top:0}
+
+/* Methods Table */
+.methods-table{width:100%;border-collapse:collapse;font-size:.85rem;table-layout:fixed}
+.methods-table col.col-method{width:36%}
+.methods-table col.col-level{width:7%}
+.methods-table col.col-xp{width:11%}
+.methods-table col.col-cost{width:13%}
+.methods-table col.col-gpxp{width:12%}
+.methods-table col.col-net{width:12%}
+.methods-table col.col-actions{width:9%}
+.methods-table th{text-align:center;color:var(--parchment);font-weight:700;padding:.55rem .45rem;border-bottom:2px ridge var(--panel-border);position:sticky;top:0;background:#1b130c;cursor:pointer;user-select:none;white-space:nowrap;text-shadow:1px 1px 0 #000;vertical-align:middle}
+.methods-table th:first-child{text-align:left}
+.methods-table th:hover{color:var(--gold)}
+.methods-table td{padding:.55rem .45rem;border-bottom:1px solid rgba(111,83,49,.25);vertical-align:middle}
+.methods-table tr:nth-child(odd) td{background:rgba(216,189,134,.025)}
+.methods-table tr:hover td{background:rgba(255,152,31,.09)}
+.methods-table tr.locked td{opacity:.4}
+.positive{color:var(--positive)}
+.negative{color:var(--negative)}
+.neutral{color:var(--muted)}
+.materials{font-size:.75rem;color:var(--muted);margin-top:.15rem}
+.method-name{font-weight:500}
+.skill-chip{display:inline-block;margin-left:.4rem;color:var(--rune-blue);font-size:.7rem;font-weight:700}
+td.num{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* No player state */
+#no-player{text-align:center;padding:3rem 1rem;color:var(--muted)}
+#no-player p{margin-bottom:.5rem}
+
+/* Responsive */
+@media(max-width:768px){
+  #stats-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .methods-header{flex-direction:column;align-items:flex-start}
+  .methods-table{font-size:.78rem}
+  .methods-table col.col-method{width:30%}
+  .methods-table col.col-level{width:8%}
+  .methods-table col.col-xp{width:12%}
+  .methods-table col.col-cost{width:13%}
+  .methods-table col.col-gpxp{width:12%}
+  .methods-table col.col-net{width:12%}
+  .methods-table col.col-actions{width:13%}
+}
+@media(max-width:480px){
+  #stats-grid{grid-template-columns:repeat(3,1fr)}
+  #xp-info{flex-direction:column;gap:.4rem}
+}
+
+/* Tabs for browsing without player */
+.skill-tabs{display:flex;flex-wrap:wrap;gap:.3rem;margin:1.5rem 0 .5rem}
+.skill-tab{background:linear-gradient(180deg,#332619,#21180f);border:2px ridge var(--panel-border);border-radius:2px;padding:.35rem .7rem;cursor:pointer;font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:.3rem}
+.skill-tab:hover,.skill-tab.active{border-color:var(--gold);color:var(--gold);background:var(--highlight)}
+.skill-tab img{width:18px;height:18px;image-rendering:pixelated}
+
+/* Price refresh */
+.refresh-btn{background:#21180f;border:2px ridge var(--panel-border);color:var(--muted);padding:.2rem .6rem;border-radius:2px;cursor:pointer;font-size:.75rem;margin-left:.5rem;font-family:inherit}
+.refresh-btn:hover{color:var(--gold);border-color:var(--gold)}
+
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--panel-border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <img class="osrs-logo" src="https://oldschool.runescape.wiki/images/Old_School_RuneScape_logo.png" alt="Old School RuneScape">
+    <h1>Skill Calculator</h1>
+    <p style="color:var(--muted);margin-bottom:1rem;font-size:.9rem">XP/GP Calculator with Live RuneLite/Wiki Grand Exchange Prices</p>
+    <div class="search-row">
+      <input type="text" id="username-input" placeholder="Enter RSN" autocomplete="off">
+      <button id="lookup-btn">Lookup Player</button>
+    </div>
+    <div id="price-status">Loading prices...</div>
+  </div>
+</header>
+
+<div class="container">
+  <div id="error-msg" class="hidden"></div>
+  <div id="loading" class="hidden"><span class="spinner"></span> Loading...</div>
+
+  <section id="player-section" class="hidden">
+    <div id="player-header">
+      <h2 id="player-name"></h2>
+      <span class="combat-level" id="combat-level"></span>
+      <span class="quest-points" id="quest-points"></span>
+    </div>
+    <div id="stats-grid"></div>
+  </section>
+
+  <div id="no-player">
+    <h2>Enter a username above to see player stats</h2>
+    <p>Or browse training methods by skill below</p>
+  </div>
+
+  <div class="skill-tabs" id="skill-tabs"></div>
+
+  <section id="methods-section" class="hidden">
+    <div class="methods-header">
+      <h2 id="skill-title">Training Methods</h2>
+      <div class="methods-controls">
+        <label><input type="checkbox" id="filter-level"> Available only</label>
+        <label>Target lvl: <input type="number" id="target-level" min="2" max="99" value="99"></label>
+        <select id="sort-by">
+          <option value="level">Sort: Level</option>
+          <option value="gpxp">Sort: GP/XP</option>
+          <option value="xp">Sort: XP/Action</option>
+          <option value="cost">Sort: Cost</option>
+        </select>
+      </div>
+    </div>
+    <div id="xp-info"></div>
+    <div id="methods-container"></div>
+  </section>
+</div>
+
+<script>
+// ── XP Table ──
+const XP_TABLE = [0];
+(function(){
+  let acc = 0;
+  for(let i=1;i<100;i++){
+    acc += Math.floor(i + 300*Math.pow(2,i/7));
+    XP_TABLE.push(Math.floor(acc/4));
+  }
+})();
+function levelForXp(xp){for(let l=98;l>=1;l--)if(xp>=XP_TABLE[l])return l+1;return 1}
+function xpForLevel(l){return l<2?0:XP_TABLE[l-1]}
+
+// ── Skills Config ──
+const SKILLS = [
+  'Overall','Attack','Defence','Strength','Hitpoints','Ranged','Prayer','Magic',
+  'Cooking','Woodcutting','Fletching','Fishing','Firemaking','Crafting',
+  'Smithing','Mining','Herblore','Agility','Thieving','Slayer','Farming',
+  'Runecraft','Hunter','Construction','Sailing'
+];
+const SKILL_ICON = s => `https://oldschool.runescape.wiki/images/${s}_icon.png`;
+const HISCORE_SKILLS = [
+  'Overall','Attack','Defence','Strength','Hitpoints','Ranged','Prayer','Magic',
+  'Cooking','Woodcutting','Fletching','Fishing','Firemaking','Crafting',
+  'Smithing','Mining','Herblore','Agility','Thieving','Slayer','Farming',
+  'Runecraft','Hunter','Construction','Sailing'
+];
+const WOM_SKILL_KEYS = {
+  Runecraft: 'runecrafting'
+};
+
+// ── Training Methods Database ──
+// Each: {name, skill, level, xp, category, inputs:[{id,name,qty}], outputs:[{id,name,qty}], notes?}
+const METHODS = [
+  // ════ FARMING ════
+  // Trees
+  {name:'Oak tree',skill:'Farming',level:15,xp:467.3,category:'Trees',
+    inputs:[{id:5370,name:'Oak sapling',qty:1},{id:5968,name:'Tomatoes(5)',qty:1}],outputs:[]},
+  {name:'Willow tree',skill:'Farming',level:30,xp:1456.5,category:'Trees',
+    inputs:[{id:5371,name:'Willow sapling',qty:1},{id:5386,name:'Apples(5)',qty:1}],outputs:[]},
+  {name:'Maple tree',skill:'Farming',level:45,xp:3403.4,category:'Trees',
+    inputs:[{id:5372,name:'Maple sapling',qty:1},{id:5396,name:'Oranges(5)',qty:1}],outputs:[]},
+  {name:'Yew tree',skill:'Farming',level:60,xp:7069.9,category:'Trees',
+    inputs:[{id:5373,name:'Yew sapling',qty:1},{id:6016,name:'Cactus spine',qty:10}],outputs:[]},
+  {name:'Magic tree',skill:'Farming',level:75,xp:13913.8,category:'Trees',
+    inputs:[{id:5374,name:'Magic sapling',qty:1},{id:5974,name:'Coconut',qty:25}],outputs:[]},
+  // Fruit Trees
+  {name:'Pineapple tree',skill:'Farming',level:51,xp:4605.7,category:'Fruit Trees',
+    inputs:[{id:5500,name:'Pineapple sapling',qty:1},{id:5982,name:'Watermelon',qty:10}],outputs:[]},
+  {name:'Papaya tree',skill:'Farming',level:57,xp:6146.4,category:'Fruit Trees',
+    inputs:[{id:5501,name:'Papaya sapling',qty:1},{id:2114,name:'Pineapple',qty:10}],outputs:[]},
+  {name:'Palm tree',skill:'Farming',level:68,xp:10150.1,category:'Fruit Trees',
+    inputs:[{id:5502,name:'Palm sapling',qty:1},{id:5972,name:'Papaya fruit',qty:15}],outputs:[]},
+  // Herbs (per seed, ~8.5 avg yield w/ ultracompost)
+  {name:'Ranarr herbs (avg 8.5)',skill:'Farming',level:32,xp:286.3,category:'Herbs',
+    inputs:[{id:5295,name:'Ranarr seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:207,name:'Grimy ranarr weed',qty:8.5}]},
+  {name:'Snapdragon herbs (avg 8.5)',skill:'Farming',level:62,xp:284.8,category:'Herbs',
+    inputs:[{id:5300,name:'Snapdragon seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:3051,name:'Grimy snapdragon',qty:8.5}]},
+  {name:'Torstol herbs (avg 8.5)',skill:'Farming',level:85,xp:289.5,category:'Herbs',
+    inputs:[{id:5304,name:'Torstol seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:219,name:'Grimy torstol',qty:8.5}]},
+
+  // ════ HERBLORE ════
+  {name:'Attack potion',skill:'Herblore',level:3,xp:25,category:'Potions',
+    inputs:[{id:91,name:'Guam potion (unf)',qty:1},{id:221,name:'Eye of newt',qty:1}],
+    outputs:[{id:121,name:'Attack potion(3)',qty:1}]},
+  {name:'Strength potion',skill:'Herblore',level:12,xp:50,category:'Potions',
+    inputs:[{id:95,name:'Tarromin potion (unf)',qty:1},{id:225,name:'Limpwurt root',qty:1}],
+    outputs:[{id:115,name:'Strength potion(3)',qty:1}]},
+  {name:'Prayer potion',skill:'Herblore',level:38,xp:87.5,category:'Potions',
+    inputs:[{id:99,name:'Ranarr potion (unf)',qty:1},{id:231,name:'Snape grass',qty:1}],
+    outputs:[{id:139,name:'Prayer potion(3)',qty:1}]},
+  {name:'Super attack',skill:'Herblore',level:45,xp:100,category:'Potions',
+    inputs:[{id:101,name:'Irit potion (unf)',qty:1},{id:221,name:'Eye of newt',qty:1}],
+    outputs:[{id:145,name:'Super attack(3)',qty:1}]},
+  {name:'Super strength',skill:'Herblore',level:55,xp:125,category:'Potions',
+    inputs:[{id:105,name:'Kwuarm potion (unf)',qty:1},{id:225,name:'Limpwurt root',qty:1}],
+    outputs:[{id:157,name:'Super strength(3)',qty:1}]},
+  {name:'Super restore',skill:'Herblore',level:63,xp:142.5,category:'Potions',
+    inputs:[{id:3004,name:'Snapdragon potion (unf)',qty:1},{id:223,name:'Red spiders\' eggs',qty:1}],
+    outputs:[{id:3026,name:'Super restore(3)',qty:1}]},
+  {name:'Super defence',skill:'Herblore',level:66,xp:150,category:'Potions',
+    inputs:[{id:107,name:'Cadantine potion (unf)',qty:1},{id:239,name:'White berries',qty:1}],
+    outputs:[{id:163,name:'Super defence(3)',qty:1}]},
+  {name:'Antifire potion',skill:'Herblore',level:69,xp:157.5,category:'Potions',
+    inputs:[{id:2483,name:'Lantadyme potion (unf)',qty:1},{id:241,name:'Dragon scale dust',qty:1}],
+    outputs:[{id:2454,name:'Antifire potion(3)',qty:1}]},
+  {name:'Ranging potion',skill:'Herblore',level:72,xp:162.5,category:'Potions',
+    inputs:[{id:109,name:'Dwarf weed potion (unf)',qty:1},{id:245,name:'Wine of zamorak',qty:1}],
+    outputs:[{id:169,name:'Ranging potion(3)',qty:1}]},
+  {name:'Saradomin brew',skill:'Herblore',level:81,xp:180,category:'Potions',
+    inputs:[{id:3002,name:'Toadflax potion (unf)',qty:1},{id:6693,name:'Crushed nest',qty:1}],
+    outputs:[{id:6687,name:'Saradomin brew(3)',qty:1}]},
+
+  // ════ CRAFTING ════
+  {name:'Cut sapphire',skill:'Crafting',level:20,xp:50,category:'Gem Cutting',
+    inputs:[{id:1623,name:'Uncut sapphire',qty:1}],outputs:[{id:1607,name:'Sapphire',qty:1}]},
+  {name:'Cut emerald',skill:'Crafting',level:27,xp:67.5,category:'Gem Cutting',
+    inputs:[{id:1621,name:'Uncut emerald',qty:1}],outputs:[{id:1605,name:'Emerald',qty:1}]},
+  {name:'Cut ruby',skill:'Crafting',level:63,xp:85,category:'Gem Cutting',
+    inputs:[{id:1619,name:'Uncut ruby',qty:1}],outputs:[{id:1603,name:'Ruby',qty:1}]},
+  {name:'Cut diamond',skill:'Crafting',level:43,xp:107.5,category:'Gem Cutting',
+    inputs:[{id:1617,name:'Uncut diamond',qty:1}],outputs:[{id:1601,name:'Diamond',qty:1}]},
+  {name:'Cut dragonstone',skill:'Crafting',level:55,xp:137.5,category:'Gem Cutting',
+    inputs:[{id:1631,name:'Uncut dragonstone',qty:1}],outputs:[{id:1615,name:'Dragonstone',qty:1}]},
+  {name:'Green d\'hide body',skill:'Crafting',level:63,xp:186,category:'Dragonhide',
+    inputs:[{id:1745,name:'Green dragon leather',qty:3}],outputs:[{id:1135,name:'Green d\'hide body',qty:1}]},
+  {name:'Blue d\'hide body',skill:'Crafting',level:71,xp:210,category:'Dragonhide',
+    inputs:[{id:2505,name:'Blue dragon leather',qty:3}],outputs:[{id:2499,name:'Blue d\'hide body',qty:1}]},
+  {name:'Red d\'hide body',skill:'Crafting',level:77,xp:234,category:'Dragonhide',
+    inputs:[{id:2507,name:'Red dragon leather',qty:3}],outputs:[{id:2501,name:'Red d\'hide body',qty:1}]},
+  {name:'Black d\'hide body',skill:'Crafting',level:84,xp:258,category:'Dragonhide',
+    inputs:[{id:2509,name:'Black dragon leather',qty:3}],outputs:[{id:2503,name:'Black d\'hide body',qty:1}]},
+  {name:'Gold bracelet',skill:'Crafting',level:7,xp:25,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1}],outputs:[{id:11069,name:'Gold bracelet',qty:1}]},
+  {name:'Sapphire ring',skill:'Crafting',level:20,xp:40,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:1607,name:'Sapphire',qty:1}],outputs:[{id:1637,name:'Sapphire ring',qty:1}]},
+  {name:'Ruby necklace',skill:'Crafting',level:40,xp:75,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:1603,name:'Ruby',qty:1}],outputs:[{id:1660,name:'Ruby necklace',qty:1}]},
+  {name:'Diamond ring',skill:'Crafting',level:43,xp:85,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:1601,name:'Diamond',qty:1}],outputs:[{id:1643,name:'Diamond ring',qty:1}]},
+
+  // ════ FLETCHING ════
+  {name:'Arrow shafts',skill:'Fletching',level:1,xp:5,category:'Arrows',
+    inputs:[{id:1511,name:'Logs',qty:1}],outputs:[{id:52,name:'Arrow shaft',qty:15}]},
+  {name:'Headless arrows (x15)',skill:'Fletching',level:1,xp:15,category:'Arrows',
+    inputs:[{id:52,name:'Arrow shaft',qty:15},{id:314,name:'Feather',qty:15}],outputs:[{id:53,name:'Headless arrow',qty:15}]},
+  {name:'Oak shortbow (u)',skill:'Fletching',level:20,xp:16.5,category:'Bows',
+    inputs:[{id:1521,name:'Oak logs',qty:1}],outputs:[{id:54,name:'Oak shortbow (u)',qty:1}]},
+  {name:'Willow longbow (u)',skill:'Fletching',level:40,xp:41.5,category:'Bows',
+    inputs:[{id:1519,name:'Willow logs',qty:1}],outputs:[{id:58,name:'Willow longbow (u)',qty:1}]},
+  {name:'Maple longbow (u)',skill:'Fletching',level:55,xp:58.3,category:'Bows',
+    inputs:[{id:1517,name:'Maple logs',qty:1}],outputs:[{id:62,name:'Maple longbow (u)',qty:1}]},
+  {name:'Yew longbow (u)',skill:'Fletching',level:70,xp:75,category:'Bows',
+    inputs:[{id:1515,name:'Yew logs',qty:1}],outputs:[{id:66,name:'Yew longbow (u)',qty:1}]},
+  {name:'Magic longbow (u)',skill:'Fletching',level:85,xp:91.5,category:'Bows',
+    inputs:[{id:1513,name:'Magic logs',qty:1}],outputs:[{id:70,name:'Magic longbow (u)',qty:1}]},
+  {name:'Maple longbow (string)',skill:'Fletching',level:55,xp:58.3,category:'Stringing',
+    inputs:[{id:62,name:'Maple longbow (u)',qty:1},{id:1777,name:'Bow string',qty:1}],outputs:[{id:851,name:'Maple longbow',qty:1}]},
+  {name:'Yew longbow (string)',skill:'Fletching',level:70,xp:75,category:'Stringing',
+    inputs:[{id:66,name:'Yew longbow (u)',qty:1},{id:1777,name:'Bow string',qty:1}],outputs:[{id:855,name:'Yew longbow',qty:1}]},
+  {name:'Magic longbow (string)',skill:'Fletching',level:85,xp:91.5,category:'Stringing',
+    inputs:[{id:70,name:'Magic longbow (u)',qty:1},{id:1777,name:'Bow string',qty:1}],outputs:[{id:859,name:'Magic longbow',qty:1}]},
+
+  // ════ COOKING ════
+  {name:'Cook trout',skill:'Cooking',level:15,xp:70,category:'Fish',
+    inputs:[{id:335,name:'Raw trout',qty:1}],outputs:[{id:333,name:'Trout',qty:1}]},
+  {name:'Cook salmon',skill:'Cooking',level:25,xp:90,category:'Fish',
+    inputs:[{id:331,name:'Raw salmon',qty:1}],outputs:[{id:329,name:'Salmon',qty:1}]},
+  {name:'Cook lobster',skill:'Cooking',level:40,xp:120,category:'Fish',
+    inputs:[{id:377,name:'Raw lobster',qty:1}],outputs:[{id:379,name:'Lobster',qty:1}]},
+  {name:'Cook swordfish',skill:'Cooking',level:45,xp:140,category:'Fish',
+    inputs:[{id:371,name:'Raw swordfish',qty:1}],outputs:[{id:373,name:'Swordfish',qty:1}]},
+  {name:'Cook monkfish',skill:'Cooking',level:62,xp:150,category:'Fish',
+    inputs:[{id:7944,name:'Raw monkfish',qty:1}],outputs:[{id:7946,name:'Monkfish',qty:1}]},
+  {name:'Cook karambwan',skill:'Cooking',level:30,xp:190,category:'Fish',
+    inputs:[{id:3142,name:'Raw karambwan',qty:1}],outputs:[{id:3144,name:'Cooked karambwan',qty:1}]},
+  {name:'Cook shark',skill:'Cooking',level:80,xp:210,category:'Fish',
+    inputs:[{id:383,name:'Raw shark',qty:1}],outputs:[{id:385,name:'Shark',qty:1}]},
+  {name:'Cook anglerfish',skill:'Cooking',level:84,xp:230,category:'Fish',
+    inputs:[{id:13439,name:'Raw anglerfish',qty:1}],outputs:[{id:13441,name:'Anglerfish',qty:1}]},
+
+  // ════ FIREMAKING ════
+  {name:'Burn logs',skill:'Firemaking',level:1,xp:40,category:'Logs',
+    inputs:[{id:1511,name:'Logs',qty:1}],outputs:[]},
+  {name:'Burn oak logs',skill:'Firemaking',level:15,xp:60,category:'Logs',
+    inputs:[{id:1521,name:'Oak logs',qty:1}],outputs:[]},
+  {name:'Burn willow logs',skill:'Firemaking',level:30,xp:90,category:'Logs',
+    inputs:[{id:1519,name:'Willow logs',qty:1}],outputs:[]},
+  {name:'Burn maple logs',skill:'Firemaking',level:45,xp:135,category:'Logs',
+    inputs:[{id:1517,name:'Maple logs',qty:1}],outputs:[]},
+  {name:'Burn yew logs',skill:'Firemaking',level:60,xp:202.5,category:'Logs',
+    inputs:[{id:1515,name:'Yew logs',qty:1}],outputs:[]},
+  {name:'Burn magic logs',skill:'Firemaking',level:75,xp:303.8,category:'Logs',
+    inputs:[{id:1513,name:'Magic logs',qty:1}],outputs:[]},
+  {name:'Burn redwood logs',skill:'Firemaking',level:90,xp:350,category:'Logs',
+    inputs:[{id:19669,name:'Redwood logs',qty:1}],outputs:[]},
+
+  // ════ WOODCUTTING ════
+  {name:'Cut normal trees',skill:'Woodcutting',level:1,xp:25,category:'Trees',
+    inputs:[],outputs:[{id:1511,name:'Logs',qty:1}]},
+  {name:'Cut oak trees',skill:'Woodcutting',level:15,xp:37.5,category:'Trees',
+    inputs:[],outputs:[{id:1521,name:'Oak logs',qty:1}]},
+  {name:'Cut willow trees',skill:'Woodcutting',level:30,xp:67.5,category:'Trees',
+    inputs:[],outputs:[{id:1519,name:'Willow logs',qty:1}]},
+  {name:'Cut maple trees',skill:'Woodcutting',level:45,xp:100,category:'Trees',
+    inputs:[],outputs:[{id:1517,name:'Maple logs',qty:1}]},
+  {name:'Cut yew trees',skill:'Woodcutting',level:60,xp:175,category:'Trees',
+    inputs:[],outputs:[{id:1515,name:'Yew logs',qty:1}]},
+  {name:'Cut magic trees',skill:'Woodcutting',level:75,xp:250,category:'Trees',
+    inputs:[],outputs:[{id:1513,name:'Magic logs',qty:1}]},
+  {name:'Cut redwood trees',skill:'Woodcutting',level:90,xp:380,category:'Trees',
+    inputs:[],outputs:[{id:19669,name:'Redwood logs',qty:1}]},
+
+  // ════ MINING ════
+  {name:'Mine iron ore',skill:'Mining',level:15,xp:35,category:'Ores',
+    inputs:[],outputs:[{id:440,name:'Iron ore',qty:1}]},
+  {name:'Mine coal',skill:'Mining',level:30,xp:50,category:'Ores',
+    inputs:[],outputs:[{id:453,name:'Coal',qty:1}]},
+  {name:'Mine mithril ore',skill:'Mining',level:55,xp:80,category:'Ores',
+    inputs:[],outputs:[{id:447,name:'Mithril ore',qty:1}]},
+  {name:'Mine adamantite ore',skill:'Mining',level:70,xp:95,category:'Ores',
+    inputs:[],outputs:[{id:449,name:'Adamantite ore',qty:1}]},
+  {name:'Mine runite ore',skill:'Mining',level:85,xp:125,category:'Ores',
+    inputs:[],outputs:[{id:451,name:'Runite ore',qty:1}]},
+  {name:'Mine amethyst',skill:'Mining',level:92,xp:240,category:'Ores',
+    inputs:[],outputs:[{id:21347,name:'Amethyst',qty:1}]},
+
+  // ════ SMITHING ════
+  {name:'Smelt bronze bar',skill:'Smithing',level:1,xp:6.2,category:'Smelting',
+    inputs:[{id:436,name:'Copper ore',qty:1},{id:438,name:'Tin ore',qty:1}],outputs:[{id:2349,name:'Bronze bar',qty:1}]},
+  {name:'Smelt iron bar',skill:'Smithing',level:15,xp:12.5,category:'Smelting',
+    inputs:[{id:440,name:'Iron ore',qty:1}],outputs:[{id:2351,name:'Iron bar',qty:1}]},
+  {name:'Smelt steel bar',skill:'Smithing',level:30,xp:17.5,category:'Smelting',
+    inputs:[{id:440,name:'Iron ore',qty:1},{id:453,name:'Coal',qty:2}],outputs:[{id:2353,name:'Steel bar',qty:1}]},
+  {name:'Smelt gold bar (gauntlets)',skill:'Smithing',level:40,xp:56.2,category:'Smelting',
+    inputs:[{id:444,name:'Gold ore',qty:1}],outputs:[{id:2357,name:'Gold bar',qty:1}]},
+  {name:'Smelt mithril bar',skill:'Smithing',level:50,xp:30,category:'Smelting',
+    inputs:[{id:447,name:'Mithril ore',qty:1},{id:453,name:'Coal',qty:4}],outputs:[{id:2359,name:'Mithril bar',qty:1}]},
+  {name:'Smelt adamantite bar',skill:'Smithing',level:70,xp:37.5,category:'Smelting',
+    inputs:[{id:449,name:'Adamantite ore',qty:1},{id:453,name:'Coal',qty:6}],outputs:[{id:2361,name:'Adamantite bar',qty:1}]},
+  {name:'Smelt runite bar',skill:'Smithing',level:85,xp:50,category:'Smelting',
+    inputs:[{id:451,name:'Runite ore',qty:1},{id:453,name:'Coal',qty:8}],outputs:[{id:2363,name:'Runite bar',qty:1}]},
+  {name:'Cannonballs (x4)',skill:'Smithing',level:35,xp:25.6,category:'Other',
+    inputs:[{id:2353,name:'Steel bar',qty:1}],outputs:[{id:2,name:'Steel cannonball',qty:4}],notes:'Requires Dwarf Cannon quest'},
+
+  // ════ MAGIC ════
+  {name:'Lvl-1 Enchant (sapphire ring)',skill:'Magic',level:7,xp:17.5,category:'Enchanting',
+    inputs:[{id:1637,name:'Sapphire ring',qty:1},{id:564,name:'Cosmic rune',qty:1},{id:555,name:'Water rune',qty:1}],
+    outputs:[{id:2550,name:'Ring of recoil',qty:1}]},
+  {name:'Lvl-2 Enchant (emerald ring)',skill:'Magic',level:27,xp:37,category:'Enchanting',
+    inputs:[{id:1639,name:'Emerald ring',qty:1},{id:564,name:'Cosmic rune',qty:1},{id:556,name:'Air rune',qty:3}],
+    outputs:[{id:2552,name:'Ring of dueling(8)',qty:1}]},
+  {name:'Lvl-3 Enchant (ruby ring)',skill:'Magic',level:49,xp:59,category:'Enchanting',
+    inputs:[{id:1641,name:'Ruby ring',qty:1},{id:564,name:'Cosmic rune',qty:1},{id:554,name:'Fire rune',qty:5}],
+    outputs:[{id:2568,name:'Ring of forging',qty:1}]},
+  {name:'Lvl-4 Enchant (diamond ring)',skill:'Magic',level:57,xp:67,category:'Enchanting',
+    inputs:[{id:1643,name:'Diamond ring',qty:1},{id:564,name:'Cosmic rune',qty:1},{id:557,name:'Earth rune',qty:10}],
+    outputs:[{id:2570,name:'Ring of life',qty:1}]},
+  {name:'Lvl-5 Enchant (dragonstone neck)',skill:'Magic',level:68,xp:78,category:'Enchanting',
+    inputs:[{id:1664,name:'Dragon necklace',qty:1},{id:564,name:'Cosmic rune',qty:1},{id:555,name:'Water rune',qty:15},{id:557,name:'Earth rune',qty:15}],
+    outputs:[{id:11105,name:'Skills necklace(4)',qty:1}]},
+  {name:'High Level Alchemy (rune item)',skill:'Magic',level:55,xp:65,category:'Alchemy',
+    inputs:[{id:561,name:'Nature rune',qty:1}],outputs:[],notes:'Profit depends on item alched. Cost shown is rune only.'},
+  {name:'Camelot Teleport',skill:'Magic',level:45,xp:55.5,category:'Teleports',
+    inputs:[{id:563,name:'Law rune',qty:1},{id:556,name:'Air rune',qty:5}],outputs:[]},
+  {name:'Lumbridge Teleport',skill:'Magic',level:31,xp:41,category:'Teleports',
+    inputs:[{id:563,name:'Law rune',qty:1},{id:556,name:'Air rune',qty:3},{id:557,name:'Earth rune',qty:1}],outputs:[]},
+  {name:'Superheat Item (gold ore)',skill:'Magic',level:43,xp:53,category:'Other',
+    inputs:[{id:561,name:'Nature rune',qty:1},{id:444,name:'Gold ore',qty:1}],
+    outputs:[{id:2357,name:'Gold bar',qty:1}],notes:'Also gives 22.5 Smithing XP'},
+  {name:'Tan Leather (green)',skill:'Magic',level:78,xp:81,category:'Other',
+    inputs:[{id:556,name:'Air rune',qty:5},{id:561,name:'Nature rune',qty:2},{id:1753,name:'Green dragonhide',qty:5}],
+    outputs:[{id:1745,name:'Green dragon leather',qty:5}],notes:'Casts on 5 hides per cast'},
+
+  // ════ PRAYER ════
+  {name:'Bury bones',skill:'Prayer',level:1,xp:4.5,category:'Burying',
+    inputs:[{id:526,name:'Bones',qty:1}],outputs:[]},
+  {name:'Bury big bones',skill:'Prayer',level:1,xp:15,category:'Burying',
+    inputs:[{id:532,name:'Big bones',qty:1}],outputs:[]},
+  {name:'Bury dragon bones',skill:'Prayer',level:1,xp:72,category:'Burying',
+    inputs:[{id:536,name:'Dragon bones',qty:1}],outputs:[]},
+  {name:'Dragon bones (gilded altar)',skill:'Prayer',level:1,xp:252,category:'Gilded Altar',
+    inputs:[{id:536,name:'Dragon bones',qty:1}],outputs:[],notes:'3.5x XP at gilded altar w/ both burners'},
+  {name:'Superior dragon bones (gilded altar)',skill:'Prayer',level:1,xp:525,category:'Gilded Altar',
+    inputs:[{id:22124,name:'Superior dragon bones',qty:1}],outputs:[],notes:'3.5x XP at gilded altar w/ both burners'},
+  {name:'Dagannoth bones (gilded altar)',skill:'Prayer',level:1,xp:437.5,category:'Gilded Altar',
+    inputs:[{id:6729,name:'Dagannoth bones',qty:1}],outputs:[],notes:'3.5x XP at gilded altar w/ both burners'},
+
+  // ════ CONSTRUCTION ════
+  {name:'Crude wooden chair',skill:'Construction',level:1,xp:58,category:'Furniture',
+    inputs:[{id:960,name:'Plank',qty:2},{id:1539,name:'Steel nails',qty:2}],outputs:[]},
+  {name:'Oak chair',skill:'Construction',level:19,xp:120,category:'Furniture',
+    inputs:[{id:8778,name:'Oak plank',qty:2}],outputs:[]},
+  {name:'Oak larder',skill:'Construction',level:33,xp:480,category:'Furniture',
+    inputs:[{id:8778,name:'Oak plank',qty:8}],outputs:[]},
+  {name:'Teak table',skill:'Construction',level:38,xp:360,category:'Furniture',
+    inputs:[{id:8780,name:'Teak plank',qty:4}],outputs:[]},
+  {name:'Mahogany table',skill:'Construction',level:52,xp:840,category:'Furniture',
+    inputs:[{id:8782,name:'Mahogany plank',qty:6}],outputs:[]},
+
+  // ════ RUNECRAFT ════
+  {name:'Craft air runes',skill:'Runecraft',level:1,xp:5,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:556,name:'Air rune',qty:1}],notes:'Multiple runes at higher levels'},
+  {name:'Craft mind runes',skill:'Runecraft',level:2,xp:5.5,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:558,name:'Mind rune',qty:1}]},
+  {name:'Craft chaos runes',skill:'Runecraft',level:35,xp:8.5,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:562,name:'Chaos rune',qty:1}]},
+  {name:'Craft nature runes',skill:'Runecraft',level:44,xp:9,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:561,name:'Nature rune',qty:1}]},
+  {name:'Craft law runes',skill:'Runecraft',level:54,xp:9.5,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:563,name:'Law rune',qty:1}]},
+  {name:'Craft death runes',skill:'Runecraft',level:65,xp:10,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:560,name:'Death rune',qty:1}]},
+  {name:'Craft blood runes (Zeah)',skill:'Runecraft',level:77,xp:23.8,category:'Runes',
+    inputs:[],outputs:[{id:565,name:'Blood rune',qty:1}],notes:'Uses dense essence, no direct GE cost'},
+  {name:'Craft soul runes (Zeah)',skill:'Runecraft',level:90,xp:29.7,category:'Runes',
+    inputs:[],outputs:[{id:566,name:'Soul rune',qty:1}],notes:'Uses dense essence, no direct GE cost'},
+
+  // ════ FISHING ════
+  {name:'Fish trout/salmon',skill:'Fishing',level:20,xp:50,category:'Fish',
+    inputs:[],outputs:[{id:335,name:'Raw trout',qty:1}],notes:'Fly fishing, ~50 XP avg'},
+  {name:'Fish lobster',skill:'Fishing',level:40,xp:90,category:'Fish',
+    inputs:[],outputs:[{id:377,name:'Raw lobster',qty:1}]},
+  {name:'Fish swordfish',skill:'Fishing',level:50,xp:100,category:'Fish',
+    inputs:[],outputs:[{id:371,name:'Raw swordfish',qty:1}]},
+  {name:'Fish monkfish',skill:'Fishing',level:62,xp:120,category:'Fish',
+    inputs:[],outputs:[{id:7944,name:'Raw monkfish',qty:1}],notes:'Requires Swan Song quest'},
+  {name:'Fish shark',skill:'Fishing',level:76,xp:110,category:'Fish',
+    inputs:[],outputs:[{id:383,name:'Raw shark',qty:1}]},
+  {name:'Fish anglerfish',skill:'Fishing',level:82,xp:120,category:'Fish',
+    inputs:[],outputs:[{id:13439,name:'Raw anglerfish',qty:1}],notes:'Requires 100% Piscarilius favour'},
+  {name:'Fish karambwan',skill:'Fishing',level:65,xp:50,category:'Fish',
+    inputs:[],outputs:[{id:3142,name:'Raw karambwan',qty:1}],notes:'Requires Tai Bwo Wannai Trio'},
+
+  // ════ HUNTER ════
+  {name:'Red chinchompas',skill:'Hunter',level:63,xp:265,category:'Chinchompas',
+    inputs:[],outputs:[{id:10034,name:'Red chinchompa',qty:1}]},
+  {name:'Black chinchompas',skill:'Hunter',level:73,xp:315,category:'Chinchompas',
+    inputs:[],outputs:[{id:11959,name:'Black chinchompa',qty:1}],notes:'Wilderness, PKer risk'},
+  {name:'Bird house run (yew)',skill:'Hunter',level:59,xp:1017,category:'Birdhouses',
+    inputs:[{id:1515,name:'Yew logs',qty:1},{id:8792,name:'Clockwork',qty:1}],outputs:[{id:5075,name:'Bird nest (empty)',qty:5}],
+    notes:'Per birdhouse, avg 5 nests. Passive XP every 50 min'},
+  {name:'Bird house run (magic)',skill:'Hunter',level:74,xp:1140,category:'Birdhouses',
+    inputs:[{id:1513,name:'Magic logs',qty:1},{id:8792,name:'Clockwork',qty:1}],outputs:[{id:5075,name:'Bird nest (empty)',qty:5}]},
+
+  // ════ AGILITY ════ (no items, just XP rates per lap)
+  {name:'Gnome Stronghold course',skill:'Agility',level:1,xp:86.5,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~8k xp/hr'},
+  {name:'Draynor Village rooftop',skill:'Agility',level:10,xp:120,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~9k xp/hr'},
+  {name:'Al Kharid rooftop',skill:'Agility',level:20,xp:180,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~13k xp/hr'},
+  {name:'Varrock rooftop',skill:'Agility',level:30,xp:238,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~13k xp/hr'},
+  {name:'Canifis rooftop',skill:'Agility',level:40,xp:240,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~40k xp/hr'},
+  {name:'Falador rooftop',skill:'Agility',level:50,xp:440,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~27k xp/hr'},
+  {name:'Seers\' Village rooftop',skill:'Agility',level:60,xp:570,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~46k xp/hr with teleport'},
+  {name:'Pollnivneach rooftop',skill:'Agility',level:70,xp:890,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~52k xp/hr'},
+  {name:'Rellekka rooftop',skill:'Agility',level:80,xp:780,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~55k xp/hr'},
+  {name:'Ardougne rooftop',skill:'Agility',level:90,xp:793,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~62k xp/hr'},
+  {name:'Prifddinas rooftop',skill:'Agility',level:75,xp:1337,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~60k xp/hr. Requires SOTE'},
+  {name:'Werewolf course',skill:'Agility',level:60,xp:730,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~45k xp/hr. No marks of grace'},
+  {name:'Ape Atoll course',skill:'Agility',level:48,xp:580,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~55k xp/hr. Requires MM1. No marks of grace'},
+  {name:'Penguin Agility course',skill:'Agility',level:30,xp:540,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~35k xp/hr. Requires Cold War'},
+  {name:'Wilderness course',skill:'Agility',level:52,xp:571.4,category:'Courses',inputs:[],outputs:[],notes:'XP per lap, ~47k xp/hr. Wilderness - PKer risk'},
+  {name:'Hallowed Sepulchre Floor 1',skill:'Agility',level:52,xp:575,category:'Hallowed Sepulchre',inputs:[],outputs:[],notes:'~35k xp/hr. Requires Sins of the Father'},
+  {name:'Hallowed Sepulchre Floor 2',skill:'Agility',level:62,xp:1200,category:'Hallowed Sepulchre',inputs:[],outputs:[],notes:'~45k xp/hr'},
+  {name:'Hallowed Sepulchre Floor 3',skill:'Agility',level:72,xp:2000,category:'Hallowed Sepulchre',inputs:[],outputs:[],notes:'~55k xp/hr'},
+  {name:'Hallowed Sepulchre Floor 4',skill:'Agility',level:82,xp:3000,category:'Hallowed Sepulchre',inputs:[],outputs:[],notes:'~65k xp/hr'},
+  {name:'Hallowed Sepulchre Floor 5',skill:'Agility',level:92,xp:4000,category:'Hallowed Sepulchre',inputs:[],outputs:[],notes:'~70-80k xp/hr, best Agility XP. Ring of endurance drop'},
+  {name:'Hallowed Sepulchre (all floors)',skill:'Agility',level:92,xp:10775,category:'Hallowed Sepulchre',inputs:[],outputs:[],notes:'Full run all 5 floors, ~70-80k xp/hr + ~1.5M GP/hr loot'},
+
+  // ════ THIEVING ════
+  // Stalls
+  {name:'Cake stall',skill:'Thieving',level:5,xp:16,category:'Stalls',inputs:[],outputs:[{id:1891,name:'Cake',qty:1}],notes:'Ardougne or Kourend'},
+  {name:'Tea stall',skill:'Thieving',level:5,xp:16,category:'Stalls',inputs:[],outputs:[{id:1978,name:'Cup of tea',qty:1}],notes:'Varrock'},
+  {name:'Silk stall',skill:'Thieving',level:20,xp:24,category:'Stalls',inputs:[],outputs:[{id:950,name:'Silk',qty:1}],notes:'Can be sold back in Ardougne after cooldown'},
+  {name:'Seed stall',skill:'Thieving',level:27,xp:10,category:'Stalls',inputs:[],outputs:[{id:5318,name:'Potato seed',qty:0.35},{id:5319,name:'Onion seed',qty:0.25},{id:5324,name:'Cabbage seed',qty:0.2},{id:5322,name:'Tomato seed',qty:0.1},{id:5295,name:'Ranarr seed',qty:0.01}],notes:'Draynor Village. Average seed mix model'},
+  {name:'Fruit stall',skill:'Thieving',level:25,xp:28.5,category:'Stalls',inputs:[],outputs:[{id:19653,name:'Golovanova fruit top',qty:0.45},{id:5972,name:'Papaya fruit',qty:0.2},{id:464,name:'Strange fruit',qty:0.15}],notes:'Hosidius, fast XP. Loot is approximate mix'},
+  {name:'Gem stall',skill:'Thieving',level:75,xp:160,category:'Stalls',inputs:[],outputs:[{id:1607,name:'Sapphire',qty:0.35},{id:1605,name:'Emerald',qty:0.25},{id:1603,name:'Ruby',qty:0.15},{id:1601,name:'Diamond',qty:0.08}],notes:'Keldagrim or Prifddinas. Approximate gem mix'},
+  {name:'Ore stall',skill:'Thieving',level:82,xp:180,category:'Stalls',inputs:[],outputs:[{id:440,name:'Iron ore',qty:0.35},{id:453,name:'Coal',qty:0.25},{id:442,name:'Silver ore',qty:0.15},{id:444,name:'Gold ore',qty:0.1}],notes:'Keldagrim. Approximate ore mix'},
+  // Pickpocketing
+  {name:'Men/Women',skill:'Thieving',level:1,xp:8,category:'Pickpocketing',inputs:[],outputs:[],notes:'3 GP per pickpocket, ~10k xp/hr'},
+  {name:'HAM members',skill:'Thieving',level:15,xp:22.5,category:'Pickpocketing',inputs:[],outputs:[],notes:'Jewellery/clothing loot, easy clue pieces'},
+  {name:'Warriors',skill:'Thieving',level:25,xp:26,category:'Pickpocketing',inputs:[],outputs:[],notes:'18 GP per pickpocket'},
+  {name:'Master Farmer',skill:'Thieving',level:38,xp:43,category:'Pickpocketing',inputs:[],outputs:[],notes:'Good seed drops for Farming, ~100k GP/hr at 94+'},
+  {name:'Knights of Ardougne',skill:'Thieving',level:55,xp:84.3,category:'Pickpocketing',inputs:[],outputs:[],notes:'50 GP per pickpocket, ~250k xp/hr with ardy diary'},
+  {name:'Blackjacking (menaphite)',skill:'Thieving',level:65,xp:486,category:'Pickpocketing',inputs:[],outputs:[],notes:'~160k GP/hr, best XP mid-level'},
+  {name:'Paladins',skill:'Thieving',level:70,xp:151.75,category:'Pickpocketing',inputs:[],outputs:[],notes:'80 GP + 2 chaos runes per pickpocket'},
+  {name:'Heroes',skill:'Thieving',level:80,xp:275,category:'Pickpocketing',inputs:[],outputs:[],notes:'~200 GP avg per pickpocket'},
+  {name:'Elves (Prif)',skill:'Thieving',level:85,xp:353,category:'Pickpocketing',inputs:[],outputs:[],notes:'~250k GP/hr, enhanced crystal keys'},
+  {name:'Vyres',skill:'Thieving',level:82,xp:306.9,category:'Pickpocketing',inputs:[],outputs:[],notes:'~250k xp/hr, ~350k GP/hr. Requires Sins of the Father'},
+  // Pyramid Plunder
+  {name:'Pyramid Plunder (Room 1)',skill:'Thieving',level:21,xp:60,category:'Pyramid Plunder',inputs:[],outputs:[],notes:'Per urn. Jalsavrah pyramid in Sophanem'},
+  {name:'Pyramid Plunder (Room 2)',skill:'Thieving',level:31,xp:90,category:'Pyramid Plunder',inputs:[],outputs:[],notes:'Per urn'},
+  {name:'Pyramid Plunder (Room 3)',skill:'Thieving',level:41,xp:150,category:'Pyramid Plunder',inputs:[],outputs:[],notes:'Per urn, ~80k xp/hr'},
+  {name:'Pyramid Plunder (Room 4)',skill:'Thieving',level:51,xp:215,category:'Pyramid Plunder',inputs:[],outputs:[],notes:'Per urn'},
+  {name:'Pyramid Plunder (Room 5)',skill:'Thieving',level:61,xp:280,category:'Pyramid Plunder',inputs:[],outputs:[],notes:'Per urn, ~120k xp/hr'},
+  {name:'Pyramid Plunder (Room 6)',skill:'Thieving',level:71,xp:350,category:'Pyramid Plunder',inputs:[],outputs:[],notes:'Per urn, ~150k xp/hr'},
+  {name:'Pyramid Plunder (Room 7)',skill:'Thieving',level:81,xp:450,category:'Pyramid Plunder',inputs:[],outputs:[],notes:'Per urn, ~190k xp/hr. Pharaoh\'s sceptre chance'},
+  {name:'Pyramid Plunder (Room 8)',skill:'Thieving',level:91,xp:550,category:'Pyramid Plunder',inputs:[],outputs:[],notes:'Per urn, ~270k xp/hr. Best PP room'},
+
+  // ════ SLAYER ════
+  {name:'Cave horrors',skill:'Slayer',level:58,xp:55,category:'Monsters',inputs:[],outputs:[{id:8921,name:'Black mask',qty:0.0078}],notes:'Mos Le\'Harmless. Black mask drop (1/512). Requires Cabin Fever'},
+  {name:'Kurasks',skill:'Slayer',level:70,xp:97,category:'Monsters',inputs:[],outputs:[],notes:'~300k GP/hr. Leaf-bladed weapons required'},
+  {name:'Skeletal wyverns',skill:'Slayer',level:72,xp:125,category:'Monsters',inputs:[],outputs:[],notes:'~500k GP/hr. Elemental/mind shield required'},
+  {name:'Gargoyles',skill:'Slayer',level:75,xp:105,category:'Monsters',inputs:[],outputs:[],notes:'~400k GP/hr profit'},
+  {name:'Nechryael',skill:'Slayer',level:80,xp:105,category:'Monsters',inputs:[],outputs:[],notes:'~500k GP/hr, good alchables'},
+  {name:'Abyssal demons',skill:'Slayer',level:85,xp:150,category:'Monsters',inputs:[],outputs:[{id:4151,name:'Abyssal whip',qty:0.002}],notes:'Whip drop (1/512)'},
+  {name:'Basilisk knights',skill:'Slayer',level:60,xp:171,category:'Monsters',inputs:[],outputs:[{id:24268,name:'Basilisk jaw',qty:0.002}],notes:'Mirror shield required. Jaw drop (1/5000). ~400k GP/hr'},
+  {name:'Brutal black dragons',skill:'Slayer',level:77,xp:315,category:'Monsters',inputs:[],outputs:[],notes:'~700k GP/hr. Catacombs of Kourend. No task required'},
+  // Slayer Bosses
+  {name:'Kraken (boss)',skill:'Slayer',level:87,xp:255,category:'Slayer Bosses',inputs:[],outputs:[{id:12004,name:'Kraken tentacle',qty:0.002}],notes:'Tentacle drop (1/400). Trident drop (1/512). ~800k GP/hr'},
+  {name:'Cerberus',skill:'Slayer',level:91,xp:350,category:'Slayer Bosses',inputs:[],outputs:[{id:13231,name:'Primordial crystal',qty:0.0039}],notes:'Primordial/Pegasian/Eternal crystal drops (1/512 each). ~1.5M GP/hr'},
+  {name:'Grotesque Guardians',skill:'Slayer',level:75,xp:450,category:'Slayer Bosses',inputs:[],outputs:[],notes:'Roof of Slayer Tower. Granite dust and uniques are not included in GE profit model'},
+  {name:'Thermonuclear smoke devil',skill:'Slayer',level:93,xp:240,category:'Slayer Bosses',inputs:[],outputs:[{id:12002,name:'Occult necklace',qty:0.0078}],notes:'Occult necklace (1/350), Smoke battlestaff (1/512). ~600k GP/hr'},
+  {name:'Smoke devil (task)',skill:'Slayer',level:93,xp:185,category:'Monsters',inputs:[],outputs:[],notes:'Burst/barrage for fast tasks. ~30k Slayer XP/hr'},
+  {name:'Hydra',skill:'Slayer',level:95,xp:255,category:'Slayer Bosses',inputs:[],outputs:[],notes:'~1.5M GP/hr, claw drop (1/1001)'},
+
+  // ════ RANGED ════
+  // Darts (per dart thrown, ammo consumed)
+  {name:'Bronze darts',skill:'Ranged',level:1,xp:1.1,category:'Darts',
+    inputs:[{id:806,name:'Bronze dart',qty:1}],outputs:[],notes:'Ranged str +1. Blowpipe ammo option'},
+  {name:'Iron darts',skill:'Ranged',level:1,xp:1.1,category:'Darts',
+    inputs:[{id:807,name:'Iron dart',qty:1}],outputs:[],notes:'Ranged str +3'},
+  {name:'Steel darts',skill:'Ranged',level:5,xp:1.1,category:'Darts',
+    inputs:[{id:808,name:'Steel dart',qty:1}],outputs:[],notes:'Ranged str +4'},
+  {name:'Mithril darts',skill:'Ranged',level:1,xp:1.1,category:'Darts',
+    inputs:[{id:809,name:'Mithril dart',qty:1}],outputs:[],notes:'Ranged str +7'},
+  {name:'Adamant darts',skill:'Ranged',level:1,xp:1.1,category:'Darts',
+    inputs:[{id:810,name:'Adamant dart',qty:1}],outputs:[],notes:'Ranged str +10'},
+  {name:'Rune darts',skill:'Ranged',level:40,xp:1.1,category:'Darts',
+    inputs:[{id:811,name:'Rune dart',qty:1}],outputs:[],notes:'Ranged str +14'},
+  {name:'Dragon darts',skill:'Ranged',level:60,xp:1.1,category:'Darts',
+    inputs:[{id:11230,name:'Dragon dart',qty:1}],outputs:[],notes:'Ranged str +20. Best blowpipe ammo'},
+  {name:'Amethyst darts',skill:'Ranged',level:60,xp:1.1,category:'Darts',
+    inputs:[{id:25849,name:'Amethyst dart',qty:1}],outputs:[],notes:'Ranged str +18'},
+  // Knives
+  {name:'Bronze knives',skill:'Ranged',level:1,xp:2.5,category:'Knives',
+    inputs:[{id:864,name:'Bronze knife',qty:1}],outputs:[],notes:'Ranged str +3'},
+  {name:'Iron knives',skill:'Ranged',level:1,xp:2.5,category:'Knives',
+    inputs:[{id:863,name:'Iron knife',qty:1}],outputs:[],notes:'Ranged str +4. Popular early training'},
+  {name:'Steel knives',skill:'Ranged',level:5,xp:2.5,category:'Knives',
+    inputs:[{id:865,name:'Steel knife',qty:1}],outputs:[],notes:'Ranged str +7'},
+  {name:'Mithril knives',skill:'Ranged',level:1,xp:2.5,category:'Knives',
+    inputs:[{id:866,name:'Mithril knife',qty:1}],outputs:[],notes:'Ranged str +9'},
+  {name:'Adamant knives',skill:'Ranged',level:1,xp:2.5,category:'Knives',
+    inputs:[{id:867,name:'Adamant knife',qty:1}],outputs:[],notes:'Ranged str +14'},
+  {name:'Rune knives',skill:'Ranged',level:40,xp:2.5,category:'Knives',
+    inputs:[{id:868,name:'Rune knife',qty:1}],outputs:[],notes:'Ranged str +24'},
+  // Arrows (per arrow, consumed on hit)
+  {name:'Bronze arrows',skill:'Ranged',level:1,xp:0,category:'Arrows',
+    inputs:[{id:882,name:'Bronze arrow',qty:1}],outputs:[],notes:'Ranged str +7. Arrow cost per shot (some recovered)'},
+  {name:'Iron arrows',skill:'Ranged',level:1,xp:0,category:'Arrows',
+    inputs:[{id:884,name:'Iron arrow',qty:1}],outputs:[],notes:'Ranged str +10'},
+  {name:'Steel arrows',skill:'Ranged',level:5,xp:0,category:'Arrows',
+    inputs:[{id:886,name:'Steel arrow',qty:1}],outputs:[],notes:'Ranged str +16'},
+  {name:'Mithril arrows',skill:'Ranged',level:1,xp:0,category:'Arrows',
+    inputs:[{id:888,name:'Mithril arrow',qty:1}],outputs:[],notes:'Ranged str +22'},
+  {name:'Adamant arrows',skill:'Ranged',level:1,xp:0,category:'Arrows',
+    inputs:[{id:890,name:'Adamant arrow',qty:1}],outputs:[],notes:'Ranged str +31'},
+  {name:'Rune arrows',skill:'Ranged',level:40,xp:0,category:'Arrows',
+    inputs:[{id:892,name:'Rune arrow',qty:1}],outputs:[],notes:'Ranged str +49'},
+  {name:'Amethyst arrows',skill:'Ranged',level:40,xp:0,category:'Arrows',
+    inputs:[{id:21326,name:'Amethyst arrow',qty:1}],outputs:[],notes:'Ranged str +55'},
+  {name:'Dragon arrows',skill:'Ranged',level:60,xp:0,category:'Arrows',
+    inputs:[{id:11212,name:'Dragon arrow',qty:1}],outputs:[],notes:'Ranged str +60. Dark bow spec ammo'},
+  // Bolts
+  {name:'Broad bolts',skill:'Ranged',level:55,xp:0,category:'Bolts',
+    inputs:[{id:11875,name:'Broad bolts',qty:1}],outputs:[],notes:'Ranged str +100. Best budget crossbow ammo. Requires 55 Slayer'},
+  {name:'Bronze bolts',skill:'Ranged',level:1,xp:0,category:'Bolts',
+    inputs:[{id:877,name:'Bronze bolts',qty:1}],outputs:[],notes:'Ranged str +10'},
+  {name:'Mithril bolts',skill:'Ranged',level:1,xp:0,category:'Bolts',
+    inputs:[{id:9142,name:'Mithril bolts',qty:1}],outputs:[],notes:'Ranged str +40'},
+  {name:'Adamant bolts',skill:'Ranged',level:1,xp:0,category:'Bolts',
+    inputs:[{id:9143,name:'Adamant bolts',qty:1}],outputs:[],notes:'Ranged str +100'},
+  {name:'Runite bolts',skill:'Ranged',level:61,xp:0,category:'Bolts',
+    inputs:[{id:9144,name:'Runite bolts',qty:1}],outputs:[],notes:'Ranged str +115'},
+  {name:'Dragon bolts',skill:'Ranged',level:64,xp:0,category:'Bolts',
+    inputs:[{id:21905,name:'Dragon bolts',qty:1}],outputs:[],notes:'Ranged str +122'},
+  // Chinchompas (AoE, xp per chin thrown)
+  {name:'Grey chinchompas (MM1 tunnels)',skill:'Ranged',level:45,xp:198.4,category:'Chinchompas',
+    inputs:[{id:10033,name:'Chinchompa',qty:1}],outputs:[],notes:'AoE training. ~150k xp/hr'},
+  {name:'Red chinchompas (MM2 tunnels)',skill:'Ranged',level:65,xp:387,category:'Chinchompas',
+    inputs:[{id:10034,name:'Red chinchompa',qty:1}],outputs:[],notes:'AoE training. ~350-500k xp/hr at MM2 tunnels'},
+  {name:'Black chinchompas (MM2 tunnels)',skill:'Ranged',level:65,xp:450,category:'Chinchompas',
+    inputs:[{id:11959,name:'Black chinchompa',qty:1}],outputs:[],notes:'AoE training. ~450-600k xp/hr at MM2 tunnels. Best ranged XP'},
+  // Cannon
+  {name:'Dwarf multicannon (per cannonball)',skill:'Ranged',level:1,xp:2,category:'Cannon',
+    inputs:[{id:2,name:'Steel cannonball',qty:1}],outputs:[],notes:'2 XP per damage (no HP XP). Requires Dwarf Cannon quest'},
+  {name:'Cannon slayer (avg per task)',skill:'Ranged',level:1,xp:2,category:'Cannon',
+    inputs:[{id:2,name:'Steel cannonball',qty:500}],outputs:[],notes:'~500 cballs/task avg. Speeds up melee tasks significantly'},
+  // Blowpipe
+  {name:'Toxic blowpipe (per shot)',skill:'Ranged',level:75,xp:4,category:'Blowpipe',
+    inputs:[{id:12934,name:'Zulrah\'s scales',qty:0.67},{id:810,name:'Adamant dart',qty:1}],outputs:[],notes:'2/3 scale per shot avg. Very fast attack speed. ~4 XP base + hit XP'},
+  {name:'Toxic blowpipe w/ rune darts',skill:'Ranged',level:75,xp:4,category:'Blowpipe',
+    inputs:[{id:12934,name:'Zulrah\'s scales',qty:0.67},{id:811,name:'Rune dart',qty:1}],outputs:[],notes:'Higher DPS variant. ~4 XP base + hit XP'},
+  {name:'Toxic blowpipe w/ dragon darts',skill:'Ranged',level:75,xp:4,category:'Blowpipe',
+    inputs:[{id:12934,name:'Zulrah\'s scales',qty:0.67},{id:11230,name:'Dragon dart',qty:1}],outputs:[],notes:'Max DPS blowpipe setup. Expensive'},
+
+  // ════ ATTACK ════
+  {name:'Sand Crabs (any melee)',skill:'Attack',level:1,xp:4,category:'Training Spots',inputs:[],outputs:[],notes:'AFK. ~20-40k xp/hr depending on gear/level'},
+  {name:'Ammonite Crabs (any melee)',skill:'Attack',level:1,xp:4,category:'Training Spots',inputs:[],outputs:[],notes:'AFK. Fossil Island. ~30-50k xp/hr. Better HP than sand crabs'},
+  {name:'NMZ (Nightmare Zone)',skill:'Attack',level:70,xp:4,category:'Training Spots',inputs:[],outputs:[],notes:'AFK with absorption pots. ~70-100k xp/hr'},
+
+  {name:'Iron scimitar',skill:'Attack',level:1,xp:0,category:'Weapons',
+    inputs:[{id:1323,name:'Iron scimitar',qty:1}],outputs:[{id:1323,name:'Iron scimitar',qty:1}],notes:'No degradation. Levels 1-10'},
+  {name:'Steel scimitar',skill:'Attack',level:5,xp:0,category:'Weapons',
+    inputs:[{id:1325,name:'Steel scimitar',qty:1}],outputs:[{id:1325,name:'Steel scimitar',qty:1}],notes:'No degradation. Levels 5-20'},
+  {name:'Mithril scimitar',skill:'Attack',level:20,xp:0,category:'Weapons',
+    inputs:[{id:1329,name:'Mithril scimitar',qty:1}],outputs:[{id:1329,name:'Mithril scimitar',qty:1}],notes:'No degradation. Levels 20-30'},
+  {name:'Adamant scimitar',skill:'Attack',level:30,xp:0,category:'Weapons',
+    inputs:[{id:1331,name:'Adamant scimitar',qty:1}],outputs:[{id:1331,name:'Adamant scimitar',qty:1}],notes:'No degradation. Levels 30-40'},
+  {name:'Rune scimitar',skill:'Attack',level:40,xp:0,category:'Weapons',
+    inputs:[{id:1333,name:'Rune scimitar',qty:1}],outputs:[{id:1333,name:'Rune scimitar',qty:1}],notes:'No degradation. Levels 40-60'},
+  {name:'Dragon scimitar',skill:'Attack',level:60,xp:0,category:'Weapons',
+    inputs:[{id:4587,name:'Dragon scimitar',qty:1}],outputs:[{id:4587,name:'Dragon scimitar',qty:1}],notes:'Requires MM1. Levels 60-70'},
+  {name:'Abyssal whip',skill:'Attack',level:70,xp:0,category:'Weapons',
+    inputs:[{id:4151,name:'Abyssal whip',qty:1}],outputs:[{id:4151,name:'Abyssal whip',qty:1}],notes:'Best non-degradable Attack training. Cannot train Strength'},
+  {name:'Granite maul',skill:'Attack',level:50,xp:0,category:'Weapons',
+    inputs:[{id:4153,name:'Granite maul',qty:1}],outputs:[{id:4153,name:'Granite maul',qty:1}],notes:'Slow but strong spec weapon. 50 Attack & Strength req'},
+
+  // ════ STRENGTH ════
+  {name:'Sand Crabs (Strength)',skill:'Strength',level:1,xp:4,category:'Training Spots',inputs:[],outputs:[],notes:'AFK. ~20-40k xp/hr depending on gear/level'},
+  {name:'Ammonite Crabs (Strength)',skill:'Strength',level:1,xp:4,category:'Training Spots',inputs:[],outputs:[],notes:'AFK. Fossil Island. ~30-50k xp/hr'},
+  {name:'NMZ (Nightmare Zone) Strength',skill:'Strength',level:70,xp:4,category:'Training Spots',inputs:[],outputs:[],notes:'AFK with absorption pots. ~70-100k xp/hr'},
+  {name:'Dragon scimitar (Strength)',skill:'Strength',level:60,xp:0,category:'Weapons',
+    inputs:[{id:4587,name:'Dragon scimitar',qty:1}],outputs:[{id:4587,name:'Dragon scimitar',qty:1}],notes:'Best Strength training weapon until 70 Atk'},
+  {name:'Abyssal bludgeon',skill:'Strength',level:70,xp:0,category:'Weapons',
+    inputs:[{id:13263,name:'Abyssal bludgeon',qty:1}],outputs:[{id:13263,name:'Abyssal bludgeon',qty:1}],notes:'Best crush Strength training. No degradation'},
+  {name:'Abyssal dagger',skill:'Strength',level:70,xp:0,category:'Weapons',
+    inputs:[{id:13265,name:'Abyssal dagger',qty:1}],outputs:[{id:13265,name:'Abyssal dagger',qty:1}],notes:'Stab Strength training option'},
+  {name:'Saradomin sword',skill:'Strength',level:70,xp:0,category:'Weapons',
+    inputs:[{id:11838,name:'Saradomin sword',qty:1}],outputs:[{id:11838,name:'Saradomin sword',qty:1}],notes:'Slash + Strength training. No degradation. Budget option'},
+
+  // ════ DEFENCE ════
+  {name:'Sand Crabs (Defence)',skill:'Defence',level:1,xp:4,category:'Training Spots',inputs:[],outputs:[],notes:'AFK. ~20-40k xp/hr depending on gear/level'},
+  {name:'Ammonite Crabs (Defence)',skill:'Defence',level:1,xp:4,category:'Training Spots',inputs:[],outputs:[],notes:'AFK. Fossil Island. ~30-50k xp/hr'},
+  {name:'NMZ (Nightmare Zone) Defence',skill:'Defence',level:70,xp:4,category:'Training Spots',inputs:[],outputs:[],notes:'AFK with absorption pots. ~70-100k xp/hr'},
+  {name:'Abyssal whip (Defence)',skill:'Defence',level:70,xp:0,category:'Weapons',
+    inputs:[{id:4151,name:'Abyssal whip',qty:1}],outputs:[{id:4151,name:'Abyssal whip',qty:1}],notes:'Defensive style. Best option for Defence training'},
+
+  // ════ FARMING (additional) ════
+  {name:'Calquat tree',skill:'Farming',level:72,xp:12096.5,category:'Special Trees',
+    inputs:[{id:5503,name:'Calquat sapling',qty:1},{id:5972,name:'Papaya fruit',qty:8}],outputs:[]},
+  {name:'Spirit tree',skill:'Farming',level:83,xp:19301.8,category:'Special Trees',
+    inputs:[],outputs:[],notes:'Spirit seed/sapling is untradeable. Protection: 5 monkey nuts + 1 monkey bar + 1 ground tooth'},
+  {name:'Celastrus tree',skill:'Farming',level:85,xp:14130,category:'Special Trees',
+    inputs:[{id:22856,name:'Celastrus sapling',qty:1},{id:6016,name:'Cactus spine',qty:8}],outputs:[{id:22935,name:'Celastrus bark',qty:8}],notes:'Avg 8 bark; fletch bark into battlestaves separately'},
+  {name:'Redwood tree',skill:'Farming',level:90,xp:22450,category:'Special Trees',
+    inputs:[{id:22859,name:'Redwood sapling',qty:1},{id:5974,name:'Coconut',qty:6}],outputs:[],notes:'Protection payment model'},
+  {name:'Dragonfruit tree',skill:'Farming',level:81,xp:17335,category:'Fruit Trees',
+    inputs:[{id:22866,name:'Dragonfruit sapling',qty:1},{id:5974,name:'Coconut',qty:15}],outputs:[]},
+  {name:'Apple tree',skill:'Farming',level:27,xp:1199.5,category:'Fruit Trees',
+    inputs:[{id:5496,name:'Apple sapling',qty:1},{id:5986,name:'Sweetcorn',qty:9}],outputs:[]},
+  {name:'Banana tree',skill:'Farming',level:33,xp:1841.5,category:'Fruit Trees',
+    inputs:[{id:5497,name:'Banana sapling',qty:1},{id:5386,name:'Apples(5)',qty:4}],outputs:[]},
+  {name:'Orange tree',skill:'Farming',level:39,xp:2470.2,category:'Fruit Trees',
+    inputs:[{id:5498,name:'Orange sapling',qty:1},{id:5406,name:'Strawberries(5)',qty:3}],outputs:[]},
+  {name:'Curry tree',skill:'Farming',level:42,xp:2906.9,category:'Fruit Trees',
+    inputs:[{id:5499,name:'Curry sapling',qty:1},{id:5416,name:'Bananas(5)',qty:5}],outputs:[]},
+  {name:'Toadflax herbs (avg 8.5)',skill:'Farming',level:38,xp:252,category:'Herbs',
+    inputs:[{id:5296,name:'Toadflax seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:3049,name:'Grimy toadflax',qty:8.5}]},
+  {name:'Irit herbs (avg 8.5)',skill:'Farming',level:44,xp:262,category:'Herbs',
+    inputs:[{id:5297,name:'Irit seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:209,name:'Grimy irit leaf',qty:8.5}]},
+  {name:'Avantoe herbs (avg 8.5)',skill:'Farming',level:50,xp:270,category:'Herbs',
+    inputs:[{id:5298,name:'Avantoe seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:211,name:'Grimy avantoe',qty:8.5}]},
+  {name:'Kwuarm herbs (avg 8.5)',skill:'Farming',level:56,xp:275,category:'Herbs',
+    inputs:[{id:5299,name:'Kwuarm seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:213,name:'Grimy kwuarm',qty:8.5}]},
+  {name:'Cadantine herbs (avg 8.5)',skill:'Farming',level:67,xp:280,category:'Herbs',
+    inputs:[{id:5301,name:'Cadantine seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:215,name:'Grimy cadantine',qty:8.5}]},
+  {name:'Lantadyme herbs (avg 8.5)',skill:'Farming',level:73,xp:282,category:'Herbs',
+    inputs:[{id:5302,name:'Lantadyme seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:2485,name:'Grimy lantadyme',qty:8.5}]},
+  {name:'Dwarf weed herbs (avg 8.5)',skill:'Farming',level:79,xp:285,category:'Herbs',
+    inputs:[{id:5303,name:'Dwarf weed seed',qty:1},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:217,name:'Grimy dwarf weed',qty:8.5}]},
+  {name:'Seaweed (underwater)',skill:'Farming',level:23,xp:21,category:'Other',
+    inputs:[{id:21490,name:'Seaweed spore',qty:1}],outputs:[{id:21504,name:'Giant seaweed',qty:3}],notes:'Avg 3 giant seaweed per patch. Passive'},
+  {name:'Limpwurt root',skill:'Farming',level:26,xp:120,category:'Allotments',
+    inputs:[{id:5100,name:'Limpwurt seed',qty:1}],outputs:[{id:225,name:'Limpwurt root',qty:3}],notes:'Avg 3 roots per seed'},
+  {name:'Sweetcorn',skill:'Farming',level:20,xp:104,category:'Allotments',
+    inputs:[{id:5320,name:'Sweetcorn seed',qty:3}],outputs:[],notes:'17 XP plant + 87 XP harvest'},
+  {name:'Strawberry',skill:'Farming',level:31,xp:130,category:'Allotments',
+    inputs:[{id:5323,name:'Strawberry seed',qty:3}],outputs:[],notes:'26 XP plant + 104 XP harvest'},
+  {name:'Watermelon',skill:'Farming',level:47,xp:195,category:'Allotments',
+    inputs:[{id:5321,name:'Watermelon seed',qty:3}],outputs:[],notes:'49 XP plant + 146 XP harvest'},
+  {name:'Snape grass',skill:'Farming',level:61,xp:225,category:'Allotments',
+    inputs:[{id:22879,name:'Snape grass seed',qty:3},{id:21483,name:'Ultracompost',qty:1}],
+    outputs:[{id:231,name:'Snape grass',qty:12}],notes:'Avg 12 per patch'},
+
+  // ════ HERBLORE (additional) ════
+  {name:'Energy potion',skill:'Herblore',level:26,xp:67.5,category:'Potions',
+    inputs:[{id:97,name:'Harralander potion (unf)',qty:1},{id:1975,name:'Chocolate dust',qty:1}],
+    outputs:[{id:3010,name:'Energy potion(3)',qty:1}]},
+  {name:'Combat potion',skill:'Herblore',level:36,xp:84,category:'Potions',
+    inputs:[{id:97,name:'Harralander potion (unf)',qty:1},{id:9736,name:'Goat horn dust',qty:1}],
+    outputs:[{id:9741,name:'Combat potion(3)',qty:1}]},
+  {name:'Super energy',skill:'Herblore',level:52,xp:117.5,category:'Potions',
+    inputs:[{id:103,name:'Avantoe potion (unf)',qty:1},{id:2970,name:'Mort myre fungus',qty:1}],
+    outputs:[{id:3018,name:'Super energy(3)',qty:1}]},
+  {name:'Magic potion',skill:'Herblore',level:76,xp:172.5,category:'Potions',
+    inputs:[{id:2483,name:'Lantadyme potion (unf)',qty:1},{id:3138,name:'Potato cactus',qty:1}],
+    outputs:[{id:3042,name:'Magic potion(3)',qty:1}]},
+  {name:'Stamina potion',skill:'Herblore',level:77,xp:102,category:'Potions',
+    inputs:[{id:3018,name:'Super energy(3)',qty:1},{id:12640,name:'Amylase crystal',qty:3}],
+    outputs:[{id:12627,name:'Stamina potion(3)',qty:1}],notes:'4 crystals for (4) dose'},
+  {name:'Super combat potion',skill:'Herblore',level:90,xp:150,category:'Potions',
+    inputs:[{id:2436,name:'Super attack(4)',qty:1},{id:2440,name:'Super strength(4)',qty:1},{id:2442,name:'Super defence(4)',qty:1},{id:269,name:'Torstol',qty:1}],
+    outputs:[{id:12695,name:'Super combat potion(4)',qty:1}]},
+  {name:'Extended antifire',skill:'Herblore',level:84,xp:110,category:'Potions',
+    inputs:[{id:2452,name:'Antifire potion(4)',qty:1},{id:11994,name:'Lava scale shard',qty:4}],
+    outputs:[{id:11951,name:'Extended antifire(4)',qty:1}]},
+  {name:'Antidote++',skill:'Herblore',level:68,xp:155,category:'Potions',
+    inputs:[{id:5935,name:'Coconut milk',qty:1},{id:259,name:'Irit leaf',qty:1},{id:6051,name:'Magic roots',qty:1}],
+    outputs:[{id:5954,name:'Antidote++(3)',qty:1}]},
+
+  // ════ COOKING (additional) ════
+  {name:'Cook shrimps',skill:'Cooking',level:1,xp:30,category:'Fish',
+    inputs:[{id:317,name:'Raw shrimps',qty:1}],outputs:[{id:315,name:'Shrimps',qty:1}]},
+  {name:'Cook pike',skill:'Cooking',level:20,xp:80,category:'Fish',
+    inputs:[{id:349,name:'Raw pike',qty:1}],outputs:[{id:351,name:'Pike',qty:1}]},
+  {name:'Cook tuna',skill:'Cooking',level:30,xp:100,category:'Fish',
+    inputs:[{id:359,name:'Raw tuna',qty:1}],outputs:[{id:361,name:'Tuna',qty:1}]},
+  {name:'Cook bass',skill:'Cooking',level:43,xp:130,category:'Fish',
+    inputs:[{id:363,name:'Raw bass',qty:1}],outputs:[{id:365,name:'Bass',qty:1}]},
+  {name:'Cook dark crab',skill:'Cooking',level:90,xp:215,category:'Fish',
+    inputs:[{id:11934,name:'Raw dark crab',qty:1}],outputs:[{id:11936,name:'Dark crab',qty:1}]},
+  {name:'Jug of wine',skill:'Cooking',level:35,xp:200,category:'Other',
+    inputs:[{id:1937,name:'Jug of water',qty:1},{id:1987,name:'Grapes',qty:1}],
+    outputs:[{id:1993,name:'Jug of wine',qty:1}],notes:'Fastest cooking XP. 14 per tick'},
+  {name:'Plain pizza',skill:'Cooking',level:35,xp:143,category:'Pizzas',
+    inputs:[{id:2283,name:'Pizza base',qty:1},{id:1982,name:'Tomato',qty:1},{id:1985,name:'Cheese',qty:1}],outputs:[{id:2289,name:'Plain pizza',qty:1}],notes:'Includes assembling/cooking plain pizza'},
+  {name:'Pineapple pizza',skill:'Cooking',level:65,xp:189,category:'Pizzas',
+    inputs:[{id:2289,name:'Plain pizza',qty:1},{id:2118,name:'Pineapple ring',qty:1}],
+    outputs:[{id:2301,name:'Pineapple pizza',qty:1}]},
+  {name:'Potato with cheese',skill:'Cooking',level:47,xp:40,category:'Other',
+    inputs:[{id:6701,name:'Baked potato',qty:1},{id:1985,name:'Cheese',qty:1}],
+    outputs:[{id:6705,name:'Potato with cheese',qty:1}]},
+
+  // ════ CRAFTING (additional) ════
+  // Spinning
+  {name:'Spin bowstring',skill:'Crafting',level:10,xp:15,category:'Spinning',
+    inputs:[{id:1779,name:'Flax',qty:1}],outputs:[{id:1777,name:'Bow string',qty:1}]},
+  {name:'Spin ball of wool',skill:'Crafting',level:1,xp:2.5,category:'Spinning',
+    inputs:[{id:1737,name:'Wool',qty:1}],outputs:[{id:1759,name:'Ball of wool',qty:1}]},
+  // Leather
+  {name:'Leather gloves',skill:'Crafting',level:1,xp:13.8,category:'Leather',
+    inputs:[{id:1741,name:'Leather',qty:1}],outputs:[{id:1059,name:'Leather gloves',qty:1}]},
+  {name:'Leather boots',skill:'Crafting',level:7,xp:16.3,category:'Leather',
+    inputs:[{id:1741,name:'Leather',qty:1}],outputs:[{id:1061,name:'Leather boots',qty:1}]},
+  {name:'Leather cowl',skill:'Crafting',level:9,xp:18.5,category:'Leather',
+    inputs:[{id:1741,name:'Leather',qty:1}],outputs:[{id:1167,name:'Leather cowl',qty:1}]},
+  {name:'Leather vambraces',skill:'Crafting',level:11,xp:22,category:'Leather',
+    inputs:[{id:1741,name:'Leather',qty:1}],outputs:[{id:1063,name:'Leather vambraces',qty:1}]},
+  {name:'Leather body',skill:'Crafting',level:14,xp:25,category:'Leather',
+    inputs:[{id:1741,name:'Leather',qty:1}],outputs:[{id:1129,name:'Leather body',qty:1}]},
+  {name:'Leather chaps',skill:'Crafting',level:18,xp:27,category:'Leather',
+    inputs:[{id:1741,name:'Leather',qty:1}],outputs:[{id:1095,name:'Leather chaps',qty:1}]},
+  {name:'Hard leather body',skill:'Crafting',level:28,xp:35,category:'Leather',
+    inputs:[{id:1743,name:'Hard leather',qty:1}],outputs:[{id:1131,name:'Hardleather body',qty:1}]},
+  // Dragonhide vambraces & chaps
+  {name:'Green d\'hide vambraces',skill:'Crafting',level:57,xp:62,category:'Dragonhide',
+    inputs:[{id:1745,name:'Green dragon leather',qty:1}],outputs:[{id:1065,name:'Green d\'hide vambraces',qty:1}]},
+  {name:'Blue d\'hide vambraces',skill:'Crafting',level:66,xp:70,category:'Dragonhide',
+    inputs:[{id:2505,name:'Blue dragon leather',qty:1}],outputs:[{id:2487,name:'Blue d\'hide vambraces',qty:1}]},
+  {name:'Red d\'hide vambraces',skill:'Crafting',level:73,xp:78,category:'Dragonhide',
+    inputs:[{id:2507,name:'Red dragon leather',qty:1}],outputs:[{id:2489,name:'Red d\'hide vambraces',qty:1}]},
+  {name:'Black d\'hide vambraces',skill:'Crafting',level:79,xp:86,category:'Dragonhide',
+    inputs:[{id:2509,name:'Black dragon leather',qty:1}],outputs:[{id:2491,name:'Black d\'hide vambraces',qty:1}]},
+  {name:'Green d\'hide chaps',skill:'Crafting',level:60,xp:124,category:'Dragonhide',
+    inputs:[{id:1745,name:'Green dragon leather',qty:2}],outputs:[{id:1099,name:'Green d\'hide chaps',qty:1}]},
+  {name:'Blue d\'hide chaps',skill:'Crafting',level:68,xp:140,category:'Dragonhide',
+    inputs:[{id:2505,name:'Blue dragon leather',qty:2}],outputs:[{id:2493,name:'Blue d\'hide chaps',qty:1}]},
+  {name:'Red d\'hide chaps',skill:'Crafting',level:75,xp:156,category:'Dragonhide',
+    inputs:[{id:2507,name:'Red dragon leather',qty:2}],outputs:[{id:2495,name:'Red d\'hide chaps',qty:1}]},
+  {name:'Black d\'hide chaps',skill:'Crafting',level:82,xp:172,category:'Dragonhide',
+    inputs:[{id:2509,name:'Black dragon leather',qty:2}],outputs:[{id:2497,name:'Black d\'hide chaps',qty:1}]},
+  // Glassblowing
+  {name:'Beer glass',skill:'Crafting',level:1,xp:17.5,category:'Glass',
+    inputs:[{id:1775,name:'Molten glass',qty:1}],outputs:[{id:1919,name:'Beer glass',qty:1}]},
+  {name:'Vial',skill:'Crafting',level:33,xp:35,category:'Glass',
+    inputs:[{id:1775,name:'Molten glass',qty:1}],outputs:[{id:229,name:'Vial',qty:1}]},
+  {name:'Fishbowl',skill:'Crafting',level:42,xp:42.5,category:'Glass',
+    inputs:[{id:1775,name:'Molten glass',qty:1}],outputs:[{id:6667,name:'Empty fishbowl',qty:1}]},
+  {name:'Unpowered orb',skill:'Crafting',level:46,xp:52.5,category:'Glass',
+    inputs:[{id:1775,name:'Molten glass',qty:1}],outputs:[{id:567,name:'Unpowered orb',qty:1}]},
+  {name:'Lantern lens',skill:'Crafting',level:49,xp:55,category:'Glass',
+    inputs:[{id:1775,name:'Molten glass',qty:1}],outputs:[{id:4542,name:'Lantern lens',qty:1}]},
+  {name:'Light orb',skill:'Crafting',level:87,xp:70,category:'Glass',
+    inputs:[{id:1775,name:'Molten glass',qty:1}],outputs:[{id:10973,name:'Light orb',qty:1}]},
+  // Battlestaves
+  {name:'Water battlestaff',skill:'Crafting',level:54,xp:100,category:'Battlestaves',
+    inputs:[{id:1391,name:'Battlestaff',qty:1},{id:571,name:'Water orb',qty:1}],outputs:[{id:1395,name:'Water battlestaff',qty:1}]},
+  {name:'Earth battlestaff',skill:'Crafting',level:58,xp:112.5,category:'Battlestaves',
+    inputs:[{id:1391,name:'Battlestaff',qty:1},{id:575,name:'Earth orb',qty:1}],outputs:[{id:1399,name:'Earth battlestaff',qty:1}]},
+  {name:'Fire battlestaff',skill:'Crafting',level:62,xp:125,category:'Battlestaves',
+    inputs:[{id:1391,name:'Battlestaff',qty:1},{id:569,name:'Fire orb',qty:1}],outputs:[{id:1393,name:'Fire battlestaff',qty:1}]},
+  {name:'Air battlestaff',skill:'Crafting',level:66,xp:137.5,category:'Battlestaves',
+    inputs:[{id:1391,name:'Battlestaff',qty:1},{id:573,name:'Air orb',qty:1}],outputs:[{id:1397,name:'Air battlestaff',qty:1}]},
+  // Amulets
+  {name:'Gold amulet (u)',skill:'Crafting',level:8,xp:30,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1}],outputs:[{id:1673,name:'Gold amulet (u)',qty:1}]},
+  {name:'Sapphire amulet (u)',skill:'Crafting',level:24,xp:65,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:1607,name:'Sapphire',qty:1}],outputs:[{id:1675,name:'Sapphire amulet (u)',qty:1}]},
+  {name:'Emerald amulet (u)',skill:'Crafting',level:31,xp:70,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:1605,name:'Emerald',qty:1}],outputs:[{id:1677,name:'Emerald amulet (u)',qty:1}]},
+  {name:'Ruby amulet (u)',skill:'Crafting',level:50,xp:85,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:1603,name:'Ruby',qty:1}],outputs:[{id:1679,name:'Ruby amulet (u)',qty:1}]},
+  {name:'Diamond amulet (u)',skill:'Crafting',level:70,xp:100,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:1601,name:'Diamond',qty:1}],outputs:[{id:1681,name:'Diamond amulet (u)',qty:1}]},
+  {name:'Dragonstone amulet (u)',skill:'Crafting',level:80,xp:150,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:1615,name:'Dragonstone',qty:1}],outputs:[{id:1683,name:'Dragonstone amulet (u)',qty:1}]},
+  // Silver
+  {name:'Holy symbol (unstrung)',skill:'Crafting',level:16,xp:50,category:'Silver',
+    inputs:[{id:2355,name:'Silver bar',qty:1}],outputs:[{id:1714,name:'Unstrung symbol',qty:1}]},
+  {name:'Tiara',skill:'Crafting',level:23,xp:52.5,category:'Silver',
+    inputs:[{id:2355,name:'Silver bar',qty:1}],outputs:[{id:5525,name:'Tiara',qty:1}]},
+  // Gem cutting (additional)
+  {name:'Cut onyx',skill:'Crafting',level:67,xp:167.5,category:'Gem Cutting',
+    inputs:[{id:6571,name:'Uncut onyx',qty:1}],outputs:[{id:6573,name:'Onyx',qty:1}]},
+  {name:'Cut zenyte',skill:'Crafting',level:89,xp:200,category:'Gem Cutting',
+    inputs:[{id:19496,name:'Uncut zenyte',qty:1}],outputs:[{id:19493,name:'Zenyte',qty:1}]},
+
+  // ════ FLETCHING (additional) ════
+  // Darts
+  {name:'Bronze darts (x10)',skill:'Fletching',level:1,xp:18,category:'Darts',
+    inputs:[{id:819,name:'Bronze dart tip',qty:10},{id:314,name:'Feather',qty:10}],outputs:[{id:806,name:'Bronze dart',qty:10}]},
+  {name:'Iron darts (x10)',skill:'Fletching',level:22,xp:38,category:'Darts',
+    inputs:[{id:820,name:'Iron dart tip',qty:10},{id:314,name:'Feather',qty:10}],outputs:[{id:807,name:'Iron dart',qty:10}]},
+  {name:'Steel darts (x10)',skill:'Fletching',level:37,xp:75,category:'Darts',
+    inputs:[{id:821,name:'Steel dart tip',qty:10},{id:314,name:'Feather',qty:10}],outputs:[{id:808,name:'Steel dart',qty:10}]},
+  {name:'Mithril darts (x10)',skill:'Fletching',level:52,xp:112,category:'Darts',
+    inputs:[{id:822,name:'Mithril dart tip',qty:10},{id:314,name:'Feather',qty:10}],outputs:[{id:809,name:'Mithril dart',qty:10}]},
+  {name:'Adamant darts (x10)',skill:'Fletching',level:67,xp:150,category:'Darts',
+    inputs:[{id:823,name:'Adamant dart tip',qty:10},{id:314,name:'Feather',qty:10}],outputs:[{id:810,name:'Adamant dart',qty:10}]},
+  {name:'Rune darts (x10)',skill:'Fletching',level:81,xp:188,category:'Darts',
+    inputs:[{id:824,name:'Rune dart tip',qty:10},{id:314,name:'Feather',qty:10}],outputs:[{id:811,name:'Rune dart',qty:10}]},
+  {name:'Dragon darts (x10)',skill:'Fletching',level:95,xp:250,category:'Darts',
+    inputs:[{id:11232,name:'Dragon dart tip',qty:10},{id:314,name:'Feather',qty:10}],outputs:[{id:11230,name:'Dragon dart',qty:10}]},
+  // Standard arrows
+  {name:'Bronze arrows (x15)',skill:'Fletching',level:1,xp:19.5,category:'Arrows',
+    inputs:[{id:53,name:'Headless arrow',qty:15},{id:39,name:'Bronze arrowtips',qty:15}],outputs:[{id:882,name:'Bronze arrow',qty:15}]},
+  {name:'Iron arrows (x15)',skill:'Fletching',level:15,xp:37.5,category:'Arrows',
+    inputs:[{id:53,name:'Headless arrow',qty:15},{id:40,name:'Iron arrowtips',qty:15}],outputs:[{id:884,name:'Iron arrow',qty:15}]},
+  {name:'Steel arrows (x15)',skill:'Fletching',level:30,xp:75,category:'Arrows',
+    inputs:[{id:53,name:'Headless arrow',qty:15},{id:41,name:'Steel arrowtips',qty:15}],outputs:[{id:886,name:'Steel arrow',qty:15}]},
+  {name:'Mithril arrows (x15)',skill:'Fletching',level:45,xp:112.5,category:'Arrows',
+    inputs:[{id:53,name:'Headless arrow',qty:15},{id:42,name:'Mithril arrowtips',qty:15}],outputs:[{id:888,name:'Mithril arrow',qty:15}]},
+  {name:'Adamant arrows (x15)',skill:'Fletching',level:60,xp:150,category:'Arrows',
+    inputs:[{id:53,name:'Headless arrow',qty:15},{id:43,name:'Adamant arrowtips',qty:15}],outputs:[{id:890,name:'Adamant arrow',qty:15}]},
+  {name:'Rune arrows (x15)',skill:'Fletching',level:75,xp:187.5,category:'Arrows',
+    inputs:[{id:53,name:'Headless arrow',qty:15},{id:44,name:'Rune arrowtips',qty:15}],outputs:[{id:892,name:'Rune arrow',qty:15}]},
+  // Broad
+  {name:'Broad arrows (x15)',skill:'Fletching',level:52,xp:225,category:'Ammo',
+    inputs:[{id:11874,name:'Broad arrowheads',qty:15},{id:53,name:'Headless arrow',qty:15}],outputs:[],notes:'Requires Slayer unlock; broad arrows are not GE-priced'},
+  {name:'Broad bolts (x10)',skill:'Fletching',level:55,xp:30,category:'Ammo',
+    inputs:[{id:11876,name:'Unfinished broad bolts',qty:10},{id:314,name:'Feather',qty:10}],outputs:[{id:11875,name:'Broad bolts',qty:10}],notes:'Requires Slayer unlock'},
+  // Javelins
+  {name:'Bronze javelins (x15)',skill:'Fletching',level:3,xp:15,category:'Javelins',
+    inputs:[{id:19584,name:'Javelin shaft',qty:15},{id:19570,name:'Bronze javelin tips',qty:15}],outputs:[{id:825,name:'Bronze javelin',qty:15}]},
+  {name:'Iron javelins (x15)',skill:'Fletching',level:17,xp:30,category:'Javelins',
+    inputs:[{id:19584,name:'Javelin shaft',qty:15},{id:19572,name:'Iron javelin tips',qty:15}],outputs:[{id:826,name:'Iron javelin',qty:15}]},
+  {name:'Steel javelins (x15)',skill:'Fletching',level:32,xp:75,category:'Javelins',
+    inputs:[{id:19584,name:'Javelin shaft',qty:15},{id:19574,name:'Steel javelin tips',qty:15}],outputs:[{id:827,name:'Steel javelin',qty:15}]},
+  {name:'Mithril javelins (x15)',skill:'Fletching',level:47,xp:120,category:'Javelins',
+    inputs:[{id:19584,name:'Javelin shaft',qty:15},{id:19576,name:'Mithril javelin tips',qty:15}],outputs:[{id:828,name:'Mithril javelin',qty:15}]},
+  {name:'Adamant javelins (x15)',skill:'Fletching',level:62,xp:150,category:'Javelins',
+    inputs:[{id:19584,name:'Javelin shaft',qty:15},{id:19578,name:'Adamant javelin tips',qty:15}],outputs:[{id:829,name:'Adamant javelin',qty:15}]},
+  {name:'Rune javelins (x15)',skill:'Fletching',level:77,xp:187.5,category:'Javelins',
+    inputs:[{id:19584,name:'Javelin shaft',qty:15},{id:19580,name:'Rune javelin tips',qty:15}],outputs:[{id:830,name:'Rune javelin',qty:15}]},
+  {name:'Dragon javelins (x15)',skill:'Fletching',level:92,xp:225,category:'Javelins',
+    inputs:[{id:19584,name:'Javelin shaft',qty:15},{id:19582,name:'Dragon javelin tips',qty:15}],outputs:[{id:19484,name:'Dragon javelin',qty:15}]},
+  // Amethyst
+  {name:'Amethyst arrowtips (x15)',skill:'Fletching',level:82,xp:60,category:'Amethyst',
+    inputs:[{id:21347,name:'Amethyst',qty:1}],outputs:[{id:21350,name:'Amethyst arrowtips',qty:15}]},
+  {name:'Amethyst bolt tips (x15)',skill:'Fletching',level:76,xp:60,category:'Amethyst',
+    inputs:[{id:21347,name:'Amethyst',qty:1}],outputs:[{id:21338,name:'Amethyst bolt tips',qty:15}]},
+  {name:'Amethyst javelin heads (x5)',skill:'Fletching',level:87,xp:60,category:'Amethyst',
+    inputs:[{id:21347,name:'Amethyst',qty:1}],outputs:[{id:21352,name:'Amethyst javelin tips',qty:5}]},
+  // Shortbows (additional)
+  {name:'Shortbow (u)',skill:'Fletching',level:5,xp:5,category:'Bows',
+    inputs:[{id:1511,name:'Logs',qty:1}],outputs:[{id:50,name:'Shortbow (u)',qty:1}]},
+  {name:'Longbow (u)',skill:'Fletching',level:10,xp:10,category:'Bows',
+    inputs:[{id:1511,name:'Logs',qty:1}],outputs:[{id:48,name:'Longbow (u)',qty:1}]},
+  {name:'Willow shortbow (u)',skill:'Fletching',level:35,xp:33.3,category:'Bows',
+    inputs:[{id:1519,name:'Willow logs',qty:1}],outputs:[{id:60,name:'Willow shortbow (u)',qty:1}]},
+  {name:'Yew shortbow (u)',skill:'Fletching',level:65,xp:67.5,category:'Bows',
+    inputs:[{id:1515,name:'Yew logs',qty:1}],outputs:[{id:68,name:'Yew shortbow (u)',qty:1}]},
+  {name:'Magic shortbow (u)',skill:'Fletching',level:80,xp:83.3,category:'Bows',
+    inputs:[{id:1513,name:'Magic logs',qty:1}],outputs:[{id:72,name:'Magic shortbow (u)',qty:1}]},
+
+  // ════ SMITHING (additional) ════
+  // Blast Furnace
+  {name:'BF Steel bar',skill:'Smithing',level:30,xp:17.5,category:'Blast Furnace',
+    inputs:[{id:440,name:'Iron ore',qty:1},{id:453,name:'Coal',qty:1}],outputs:[{id:2353,name:'Steel bar',qty:1}],notes:'Blast Furnace halves coal'},
+  {name:'BF Mithril bar',skill:'Smithing',level:50,xp:30,category:'Blast Furnace',
+    inputs:[{id:447,name:'Mithril ore',qty:1},{id:453,name:'Coal',qty:2}],outputs:[{id:2359,name:'Mithril bar',qty:1}],notes:'Blast Furnace halves coal'},
+  {name:'BF Adamantite bar',skill:'Smithing',level:70,xp:37.5,category:'Blast Furnace',
+    inputs:[{id:449,name:'Adamantite ore',qty:1},{id:453,name:'Coal',qty:3}],outputs:[{id:2361,name:'Adamantite bar',qty:1}],notes:'Blast Furnace halves coal'},
+  {name:'BF Runite bar',skill:'Smithing',level:85,xp:50,category:'Blast Furnace',
+    inputs:[{id:451,name:'Runite ore',qty:1},{id:453,name:'Coal',qty:4}],outputs:[{id:2363,name:'Runite bar',qty:1}],notes:'Blast Furnace halves coal'},
+  {name:'BF Gold bar (gauntlets)',skill:'Smithing',level:40,xp:56.2,category:'Blast Furnace',
+    inputs:[{id:444,name:'Gold ore',qty:1}],outputs:[{id:2357,name:'Gold bar',qty:1}],notes:'Goldsmith gauntlets at BF. Best Smithing XP/hr'},
+  // Platebodies
+  {name:'Bronze platebody',skill:'Smithing',level:18,xp:62.5,category:'Platebodies',
+    inputs:[{id:2349,name:'Bronze bar',qty:5}],outputs:[{id:1117,name:'Bronze platebody',qty:1}]},
+  {name:'Iron platebody',skill:'Smithing',level:33,xp:125,category:'Platebodies',
+    inputs:[{id:2351,name:'Iron bar',qty:5}],outputs:[{id:1115,name:'Iron platebody',qty:1}]},
+  {name:'Steel platebody',skill:'Smithing',level:48,xp:187.5,category:'Platebodies',
+    inputs:[{id:2353,name:'Steel bar',qty:5}],outputs:[{id:1119,name:'Steel platebody',qty:1}]},
+  {name:'Mithril platebody',skill:'Smithing',level:68,xp:250,category:'Platebodies',
+    inputs:[{id:2359,name:'Mithril bar',qty:5}],outputs:[{id:1121,name:'Mithril platebody',qty:1}]},
+  {name:'Adamant platebody',skill:'Smithing',level:88,xp:312.5,category:'Platebodies',
+    inputs:[{id:2361,name:'Adamantite bar',qty:5}],outputs:[{id:1123,name:'Adamant platebody',qty:1}]},
+  {name:'Rune platebody',skill:'Smithing',level:99,xp:375,category:'Platebodies',
+    inputs:[{id:2363,name:'Runite bar',qty:5}],outputs:[{id:1127,name:'Rune platebody',qty:1}]},
+  // Dart tips
+  {name:'Bronze dart tips (x10)',skill:'Smithing',level:4,xp:12.5,category:'Dart Tips',
+    inputs:[{id:2349,name:'Bronze bar',qty:1}],outputs:[{id:819,name:'Bronze dart tip',qty:10}]},
+  {name:'Iron dart tips (x10)',skill:'Smithing',level:19,xp:25,category:'Dart Tips',
+    inputs:[{id:2351,name:'Iron bar',qty:1}],outputs:[{id:820,name:'Iron dart tip',qty:10}]},
+  {name:'Steel dart tips (x10)',skill:'Smithing',level:34,xp:37.5,category:'Dart Tips',
+    inputs:[{id:2353,name:'Steel bar',qty:1}],outputs:[{id:821,name:'Steel dart tip',qty:10}]},
+  {name:'Mithril dart tips (x10)',skill:'Smithing',level:54,xp:50,category:'Dart Tips',
+    inputs:[{id:2359,name:'Mithril bar',qty:1}],outputs:[{id:822,name:'Mithril dart tip',qty:10}]},
+  {name:'Adamant dart tips (x10)',skill:'Smithing',level:74,xp:62.5,category:'Dart Tips',
+    inputs:[{id:2361,name:'Adamantite bar',qty:1}],outputs:[{id:823,name:'Adamant dart tip',qty:10}]},
+  {name:'Rune dart tips (x10)',skill:'Smithing',level:89,xp:75,category:'Dart Tips',
+    inputs:[{id:2363,name:'Runite bar',qty:1}],outputs:[{id:824,name:'Rune dart tip',qty:10}]},
+  // Knives
+  {name:'Iron knives (x5)',skill:'Smithing',level:22,xp:25,category:'Knives',
+    inputs:[{id:2351,name:'Iron bar',qty:1}],outputs:[{id:863,name:'Iron knife',qty:5}]},
+  {name:'Steel knives (x5)',skill:'Smithing',level:37,xp:37.5,category:'Knives',
+    inputs:[{id:2353,name:'Steel bar',qty:1}],outputs:[{id:865,name:'Steel knife',qty:5}]},
+  {name:'Mithril knives (x5)',skill:'Smithing',level:57,xp:50,category:'Knives',
+    inputs:[{id:2359,name:'Mithril bar',qty:1}],outputs:[{id:866,name:'Mithril knife',qty:5}]},
+
+  // ════ MAGIC (additional) ════
+  // Bolt Enchanting
+  {name:'Enchant Sapphire bolts (10)',skill:'Magic',level:7,xp:17.5,category:'Bolt Enchanting',
+    inputs:[{id:9337,name:'Sapphire bolts',qty:10},{id:564,name:'Cosmic rune',qty:1},{id:555,name:'Water rune',qty:1}],
+    outputs:[{id:9240,name:'Sapphire bolts (e)',qty:10}]},
+  {name:'Enchant Emerald bolts (10)',skill:'Magic',level:27,xp:37,category:'Bolt Enchanting',
+    inputs:[{id:9338,name:'Emerald bolts',qty:10},{id:564,name:'Cosmic rune',qty:1},{id:556,name:'Air rune',qty:3}],
+    outputs:[{id:9241,name:'Emerald bolts (e)',qty:10}]},
+  {name:'Enchant Ruby bolts (10)',skill:'Magic',level:49,xp:59,category:'Bolt Enchanting',
+    inputs:[{id:9339,name:'Ruby bolts',qty:10},{id:564,name:'Cosmic rune',qty:1},{id:554,name:'Fire rune',qty:5},{id:565,name:'Blood rune',qty:1}],
+    outputs:[{id:9242,name:'Ruby bolts (e)',qty:10}]},
+  {name:'Enchant Diamond bolts (10)',skill:'Magic',level:57,xp:67,category:'Bolt Enchanting',
+    inputs:[{id:9340,name:'Diamond bolts',qty:10},{id:564,name:'Cosmic rune',qty:1},{id:557,name:'Earth rune',qty:10},{id:563,name:'Law rune',qty:2}],
+    outputs:[{id:9243,name:'Diamond bolts (e)',qty:10}]},
+  {name:'Enchant Dragonstone bolts (10)',skill:'Magic',level:68,xp:78,category:'Bolt Enchanting',
+    inputs:[{id:9341,name:'Dragonstone bolts',qty:10},{id:564,name:'Cosmic rune',qty:1},{id:557,name:'Earth rune',qty:15},{id:566,name:'Soul rune',qty:1}],
+    outputs:[{id:9244,name:'Dragonstone bolts (e)',qty:10}]},
+  {name:'Enchant Onyx bolts (10)',skill:'Magic',level:87,xp:97,category:'Bolt Enchanting',
+    inputs:[{id:9342,name:'Onyx bolts',qty:10},{id:564,name:'Cosmic rune',qty:1},{id:554,name:'Fire rune',qty:20},{id:560,name:'Death rune',qty:1}],
+    outputs:[{id:9245,name:'Onyx bolts (e)',qty:10}]},
+  // Charge Orbs
+  {name:'Charge Water Orb',skill:'Magic',level:56,xp:66,category:'Charging',
+    inputs:[{id:567,name:'Unpowered orb',qty:1},{id:564,name:'Cosmic rune',qty:3},{id:555,name:'Water rune',qty:30}],
+    outputs:[{id:571,name:'Water orb',qty:1}]},
+  {name:'Charge Earth Orb',skill:'Magic',level:60,xp:70,category:'Charging',
+    inputs:[{id:567,name:'Unpowered orb',qty:1},{id:564,name:'Cosmic rune',qty:3},{id:557,name:'Earth rune',qty:30}],
+    outputs:[{id:575,name:'Earth orb',qty:1}]},
+  {name:'Charge Fire Orb',skill:'Magic',level:63,xp:73,category:'Charging',
+    inputs:[{id:567,name:'Unpowered orb',qty:1},{id:564,name:'Cosmic rune',qty:3},{id:554,name:'Fire rune',qty:30}],
+    outputs:[{id:569,name:'Fire orb',qty:1}]},
+  {name:'Charge Air Orb',skill:'Magic',level:66,xp:76,category:'Charging',
+    inputs:[{id:567,name:'Unpowered orb',qty:1},{id:564,name:'Cosmic rune',qty:3},{id:556,name:'Air rune',qty:30}],
+    outputs:[{id:573,name:'Air orb',qty:1}]},
+  // Teleports (additional)
+  {name:'Varrock Teleport',skill:'Magic',level:25,xp:35,category:'Teleports',
+    inputs:[{id:563,name:'Law rune',qty:1},{id:556,name:'Air rune',qty:3},{id:554,name:'Fire rune',qty:1}],outputs:[]},
+  {name:'Falador Teleport',skill:'Magic',level:37,xp:48,category:'Teleports',
+    inputs:[{id:563,name:'Law rune',qty:1},{id:556,name:'Air rune',qty:3},{id:555,name:'Water rune',qty:1}],outputs:[]},
+  // Lunar Spells
+  {name:'Spin Flax (5)',skill:'Magic',level:76,xp:75,category:'Lunar',
+    inputs:[{id:9075,name:'Astral rune',qty:1},{id:561,name:'Nature rune',qty:1},{id:556,name:'Air rune',qty:5},{id:1779,name:'Flax',qty:5}],
+    outputs:[{id:1777,name:'Bow string',qty:5}],notes:'Spins 5 flax per cast'},
+  {name:'Superglass Make',skill:'Magic',level:77,xp:78,category:'Lunar',
+    inputs:[{id:9075,name:'Astral rune',qty:2},{id:554,name:'Fire rune',qty:6},{id:556,name:'Air rune',qty:10},{id:1783,name:'Bucket of sand',qty:13},{id:21504,name:'Giant seaweed',qty:2}],
+    outputs:[{id:1775,name:'Molten glass',qty:16}],notes:'Avg ~16 glass with giant seaweed'},
+  {name:'Plank Make (oak)',skill:'Magic',level:86,xp:90,category:'Lunar',
+    inputs:[{id:9075,name:'Astral rune',qty:2},{id:561,name:'Nature rune',qty:1},{id:1521,name:'Oak logs',qty:1},{id:995,name:'Coins',qty:175}],
+    outputs:[{id:8778,name:'Oak plank',qty:1}]},
+  {name:'Plank Make (teak)',skill:'Magic',level:86,xp:90,category:'Lunar',
+    inputs:[{id:9075,name:'Astral rune',qty:2},{id:561,name:'Nature rune',qty:1},{id:6333,name:'Teak logs',qty:1},{id:995,name:'Coins',qty:350}],
+    outputs:[{id:8780,name:'Teak plank',qty:1}]},
+  {name:'Plank Make (mahogany)',skill:'Magic',level:86,xp:90,category:'Lunar',
+    inputs:[{id:9075,name:'Astral rune',qty:2},{id:561,name:'Nature rune',qty:1},{id:6332,name:'Mahogany logs',qty:1},{id:995,name:'Coins',qty:1050}],
+    outputs:[{id:8782,name:'Mahogany plank',qty:1}]},
+  {name:'String Jewellery',skill:'Magic',level:80,xp:83,category:'Lunar',
+    inputs:[{id:9075,name:'Astral rune',qty:2},{id:555,name:'Water rune',qty:5},{id:557,name:'Earth rune',qty:10}],outputs:[],
+    notes:'Strings all unstrung jewellery in inventory'},
+  {name:'Tan Leather (blue)',skill:'Magic',level:78,xp:81,category:'Other',
+    inputs:[{id:556,name:'Air rune',qty:5},{id:561,name:'Nature rune',qty:2},{id:1751,name:'Blue dragonhide',qty:5}],
+    outputs:[{id:2505,name:'Blue dragon leather',qty:5}],notes:'5 hides per cast'},
+  {name:'Tan Leather (red)',skill:'Magic',level:78,xp:81,category:'Other',
+    inputs:[{id:556,name:'Air rune',qty:5},{id:561,name:'Nature rune',qty:2},{id:1749,name:'Red dragonhide',qty:5}],
+    outputs:[{id:2507,name:'Red dragon leather',qty:5}],notes:'5 hides per cast'},
+  {name:'Tan Leather (black)',skill:'Magic',level:78,xp:81,category:'Other',
+    inputs:[{id:556,name:'Air rune',qty:5},{id:561,name:'Nature rune',qty:2},{id:1747,name:'Black dragonhide',qty:5}],
+    outputs:[{id:2509,name:'Black dragon leather',qty:5}],notes:'5 hides per cast'},
+
+  // ════ PRAYER (additional) ════
+  // Ensouled Heads
+  {name:'Ensouled goblin head',skill:'Prayer',level:1,xp:130,category:'Ensouled Heads',
+    inputs:[{id:13448,name:'Ensouled goblin head',qty:1}],outputs:[],notes:'Arceuus spellbook'},
+  {name:'Ensouled imp head',skill:'Prayer',level:1,xp:286,category:'Ensouled Heads',
+    inputs:[{id:13454,name:'Ensouled imp head',qty:1}],outputs:[],notes:'Arceuus spellbook'},
+  {name:'Ensouled bear head',skill:'Prayer',level:1,xp:480,category:'Ensouled Heads',
+    inputs:[{id:13463,name:'Ensouled bear head',qty:1}],outputs:[]},
+  {name:'Ensouled unicorn head',skill:'Prayer',level:1,xp:494,category:'Ensouled Heads',
+    inputs:[{id:13466,name:'Ensouled unicorn head',qty:1}],outputs:[]},
+  {name:'Ensouled dog head',skill:'Prayer',level:1,xp:520,category:'Ensouled Heads',
+    inputs:[{id:13469,name:'Ensouled dog head',qty:1}],outputs:[]},
+  {name:'Ensouled chaos druid head',skill:'Prayer',level:1,xp:584,category:'Ensouled Heads',
+    inputs:[{id:13472,name:'Ensouled chaos druid head',qty:1}],outputs:[]},
+  {name:'Ensouled giant head',skill:'Prayer',level:1,xp:650,category:'Ensouled Heads',
+    inputs:[{id:13475,name:'Ensouled giant head',qty:1}],outputs:[]},
+  {name:'Ensouled ogre head',skill:'Prayer',level:1,xp:728,category:'Ensouled Heads',
+    inputs:[{id:13478,name:'Ensouled ogre head',qty:1}],outputs:[]},
+  {name:'Ensouled elf head',skill:'Prayer',level:1,xp:754,category:'Ensouled Heads',
+    inputs:[{id:13481,name:'Ensouled elf head',qty:1}],outputs:[]},
+  {name:'Ensouled troll head',skill:'Prayer',level:1,xp:780,category:'Ensouled Heads',
+    inputs:[{id:13484,name:'Ensouled troll head',qty:1}],outputs:[]},
+  {name:'Ensouled horror head',skill:'Prayer',level:1,xp:832,category:'Ensouled Heads',
+    inputs:[{id:13487,name:'Ensouled horror head',qty:1}],outputs:[]},
+  {name:'Ensouled kalphite head',skill:'Prayer',level:1,xp:884,category:'Ensouled Heads',
+    inputs:[{id:13490,name:'Ensouled kalphite head',qty:1}],outputs:[]},
+  {name:'Ensouled dagannoth head',skill:'Prayer',level:1,xp:936,category:'Ensouled Heads',
+    inputs:[{id:13493,name:'Ensouled dagannoth head',qty:1}],outputs:[]},
+  {name:'Ensouled bloodveld head',skill:'Prayer',level:1,xp:1040,category:'Ensouled Heads',
+    inputs:[{id:13496,name:'Ensouled bloodveld head',qty:1}],outputs:[]},
+  {name:'Ensouled tzhaar head',skill:'Prayer',level:1,xp:1104,category:'Ensouled Heads',
+    inputs:[{id:13499,name:'Ensouled tzhaar head',qty:1}],outputs:[]},
+  {name:'Ensouled demon head',skill:'Prayer',level:1,xp:1170,category:'Ensouled Heads',
+    inputs:[{id:13502,name:'Ensouled demon head',qty:1}],outputs:[]},
+  {name:'Ensouled aviansie head',skill:'Prayer',level:1,xp:1234,category:'Ensouled Heads',
+    inputs:[{id:13505,name:'Ensouled aviansie head',qty:1}],outputs:[]},
+  {name:'Ensouled abyssal head',skill:'Prayer',level:1,xp:1300,category:'Ensouled Heads',
+    inputs:[{id:13508,name:'Ensouled abyssal head',qty:1}],outputs:[]},
+  {name:'Ensouled dragon head',skill:'Prayer',level:1,xp:1560,category:'Ensouled Heads',
+    inputs:[{id:13511,name:'Ensouled dragon head',qty:1}],outputs:[]},
+  {name:'Ensouled hellhound head',skill:'Prayer',level:1,xp:1200,category:'Ensouled Heads',
+    inputs:[{id:26997,name:'Ensouled hellhound head',qty:1}],outputs:[],notes:'Requires Arceuus reanimation spell'},
+  // Chaos Altar
+  {name:'Dragon bones (chaos altar)',skill:'Prayer',level:1,xp:252,category:'Chaos Altar',
+    inputs:[{id:536,name:'Dragon bones',qty:1}],outputs:[],notes:'3.5x XP, 50% bone save. Wilderness risk'},
+  {name:'Superior dragon bones (chaos altar)',skill:'Prayer',level:1,xp:525,category:'Chaos Altar',
+    inputs:[{id:22124,name:'Superior dragon bones',qty:1}],outputs:[],notes:'3.5x XP, 50% bone save. Wilderness risk'},
+  {name:'Hydra bones (chaos altar)',skill:'Prayer',level:1,xp:385,category:'Chaos Altar',
+    inputs:[{id:22786,name:'Hydra bones',qty:1}],outputs:[],notes:'110 base x3.5. 50% save. Wilderness risk'},
+  {name:'Drake bones (chaos altar)',skill:'Prayer',level:1,xp:280,category:'Chaos Altar',
+    inputs:[{id:22783,name:'Drake bones',qty:1}],outputs:[],notes:'80 base x3.5. 50% save. Wilderness risk'},
+  {name:'Lava dragon bones (chaos altar)',skill:'Prayer',level:1,xp:297.5,category:'Chaos Altar',
+    inputs:[{id:11943,name:'Lava dragon bones',qty:1}],outputs:[],notes:'85 base x3.5. 50% save. Wilderness risk'},
+  {name:'Ourg bones (chaos altar)',skill:'Prayer',level:1,xp:490,category:'Chaos Altar',
+    inputs:[{id:4834,name:'Ourg bones',qty:1}],outputs:[],notes:'140 base x3.5. 50% save. Wilderness risk'},
+  // Gilded Altar extra bones
+  {name:'Hydra bones (gilded altar)',skill:'Prayer',level:1,xp:385,category:'Gilded Altar',
+    inputs:[{id:22786,name:'Hydra bones',qty:1}],outputs:[],notes:'110 base x3.5 at gilded altar'},
+  {name:'Drake bones (gilded altar)',skill:'Prayer',level:1,xp:280,category:'Gilded Altar',
+    inputs:[{id:22783,name:'Drake bones',qty:1}],outputs:[],notes:'80 base x3.5 at gilded altar'},
+  {name:'Lava dragon bones (gilded altar)',skill:'Prayer',level:1,xp:297.5,category:'Gilded Altar',
+    inputs:[{id:11943,name:'Lava dragon bones',qty:1}],outputs:[],notes:'85 base x3.5 at gilded altar'},
+  {name:'Ourg bones (gilded altar)',skill:'Prayer',level:1,xp:490,category:'Gilded Altar',
+    inputs:[{id:4834,name:'Ourg bones',qty:1}],outputs:[],notes:'140 base x3.5 at gilded altar'},
+  {name:'Baby dragon bones (gilded altar)',skill:'Prayer',level:1,xp:105,category:'Gilded Altar',
+    inputs:[{id:534,name:'Babydragon bones',qty:1}],outputs:[],notes:'30 base x3.5 at gilded altar'},
+
+  // ════ CONSTRUCTION (additional) ════
+  {name:'Oak dungeon door',skill:'Construction',level:74,xp:600,category:'Furniture',
+    inputs:[{id:8778,name:'Oak plank',qty:10}],outputs:[],notes:'Build & remove in POH dungeon'},
+  {name:'Teak garden bench',skill:'Construction',level:66,xp:540,category:'Furniture',
+    inputs:[{id:8780,name:'Teak plank',qty:6}],outputs:[]},
+  {name:'Mounted mythical cape',skill:'Construction',level:47,xp:370,category:'Furniture',
+    inputs:[{id:8780,name:'Teak plank',qty:3}],outputs:[],notes:'Requires Dragon Slayer II. Best XP/plank for teak'},
+  {name:'Mahogany bench',skill:'Construction',level:77,xp:840,category:'Furniture',
+    inputs:[{id:8782,name:'Mahogany plank',qty:6}],outputs:[]},
+
+  // ════ RUNECRAFT (additional) ════
+  {name:'Craft water runes',skill:'Runecraft',level:5,xp:6,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:555,name:'Water rune',qty:1}]},
+  {name:'Craft earth runes',skill:'Runecraft',level:9,xp:6.5,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:557,name:'Earth rune',qty:1}]},
+  {name:'Craft fire runes',skill:'Runecraft',level:14,xp:7,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:554,name:'Fire rune',qty:1}]},
+  {name:'Craft body runes',skill:'Runecraft',level:20,xp:7.5,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:559,name:'Body rune',qty:1}]},
+  {name:'Craft cosmic runes',skill:'Runecraft',level:27,xp:8,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:564,name:'Cosmic rune',qty:1}]},
+  {name:'Craft astral runes',skill:'Runecraft',level:40,xp:8.7,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:9075,name:'Astral rune',qty:1}]},
+  {name:'Craft wrath runes',skill:'Runecraft',level:95,xp:8,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1}],outputs:[{id:21880,name:'Wrath rune',qty:1}],notes:'Requires Dragon Slayer II'},
+  // Combination Runes
+  {name:'Craft lava runes',skill:'Runecraft',level:23,xp:10,category:'Combination Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1},{id:557,name:'Earth rune',qty:1}],
+    outputs:[{id:4699,name:'Lava rune',qty:1}],notes:'Fire altar + binding necklace. Best RC XP/hr'},
+  {name:'Craft mud runes',skill:'Runecraft',level:13,xp:9.3,category:'Combination Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1},{id:555,name:'Water rune',qty:1}],
+    outputs:[{id:4698,name:'Mud rune',qty:1}],notes:'Earth altar + binding necklace'},
+  {name:'Craft smoke runes',skill:'Runecraft',level:15,xp:9.5,category:'Combination Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1},{id:556,name:'Air rune',qty:1}],
+    outputs:[{id:4697,name:'Smoke rune',qty:1}],notes:'Fire altar + binding necklace'},
+  {name:'Craft steam runes',skill:'Runecraft',level:19,xp:10,category:'Combination Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1},{id:555,name:'Water rune',qty:1}],
+    outputs:[{id:4694,name:'Steam rune',qty:1}],notes:'Fire altar + binding necklace'},
+
+  // ════ WOODCUTTING (additional) ════
+  {name:'Cut teak trees',skill:'Woodcutting',level:35,xp:85,category:'Trees',
+    inputs:[],outputs:[{id:6333,name:'Teak logs',qty:1}]},
+  {name:'Cut mahogany trees',skill:'Woodcutting',level:50,xp:125,category:'Trees',
+    inputs:[],outputs:[{id:6332,name:'Mahogany logs',qty:1}]},
+
+  // ════ MINING (additional) ════
+  {name:'Mine copper ore',skill:'Mining',level:1,xp:17.5,category:'Ores',
+    inputs:[],outputs:[{id:436,name:'Copper ore',qty:1}]},
+  {name:'Mine tin ore',skill:'Mining',level:1,xp:17.5,category:'Ores',
+    inputs:[],outputs:[{id:438,name:'Tin ore',qty:1}]},
+  {name:'Mine silver ore',skill:'Mining',level:20,xp:40,category:'Ores',
+    inputs:[],outputs:[{id:442,name:'Silver ore',qty:1}]},
+  {name:'Mine gold ore',skill:'Mining',level:40,xp:65,category:'Ores',
+    inputs:[],outputs:[{id:444,name:'Gold ore',qty:1}]},
+  {name:'Mine gem rocks',skill:'Mining',level:40,xp:65,category:'Other',
+    inputs:[],outputs:[],notes:'Drops random gems. Shilo Village. ~300k GP/hr'},
+
+  // ════ FISHING (additional) ════
+  {name:'Fish shrimps',skill:'Fishing',level:1,xp:10,category:'Fish',
+    inputs:[],outputs:[{id:317,name:'Raw shrimps',qty:1}]},
+  {name:'Fish pike',skill:'Fishing',level:25,xp:60,category:'Fish',
+    inputs:[],outputs:[{id:349,name:'Raw pike',qty:1}]},
+  {name:'Fish tuna',skill:'Fishing',level:35,xp:80,category:'Fish',
+    inputs:[],outputs:[{id:359,name:'Raw tuna',qty:1}]},
+  {name:'Fish bass',skill:'Fishing',level:46,xp:100,category:'Fish',
+    inputs:[],outputs:[{id:363,name:'Raw bass',qty:1}]},
+  {name:'Fish dark crabs',skill:'Fishing',level:85,xp:130,category:'Fish',
+    inputs:[],outputs:[{id:11934,name:'Raw dark crab',qty:1}],notes:'Wilderness resource area'},
+  {name:'Barbarian fishing (leaping)',skill:'Fishing',level:58,xp:70,category:'Fish',
+    inputs:[],outputs:[],notes:'Leaping fish not tradeable. Best XP, also gives Agility+Strength XP'},
+  {name:'Minnows',skill:'Fishing',level:82,xp:26.1,category:'Fish',
+    inputs:[],outputs:[{id:383,name:'Raw shark',qty:0.025}],notes:'Minnows are untradeable; value modelled as 40 minnows per raw shark'},
+  {name:'Infernal eels',skill:'Fishing',level:80,xp:60,category:'Fish',
+    inputs:[],outputs:[],notes:'Smash for onyx bolt tips, tokkul, lava scale shards. TzHaar area'},
+  {name:'Sacred eels',skill:'Fishing',level:87,xp:105,category:'Fish',
+    inputs:[],outputs:[],notes:'Cook for Zulrah scales. Zul-Andra'},
+
+  // ════ HUNTER (additional) ════
+  {name:'Grey chinchompas',skill:'Hunter',level:53,xp:198.4,category:'Chinchompas',
+    inputs:[],outputs:[{id:10033,name:'Chinchompa',qty:1}]},
+  {name:'Crimson swift (bird snare)',skill:'Hunter',level:1,xp:34,category:'Bird Snares',
+    inputs:[],outputs:[],notes:'~5k xp/hr'},
+  {name:'Tropical wagtail (bird snare)',skill:'Hunter',level:19,xp:95.2,category:'Bird Snares',
+    inputs:[],outputs:[],notes:'~20k xp/hr'},
+  {name:'Swamp lizard',skill:'Hunter',level:29,xp:152,category:'Salamanders',
+    inputs:[],outputs:[{id:10149,name:'Swamp lizard',qty:1}]},
+  {name:'Orange salamander',skill:'Hunter',level:47,xp:224,category:'Salamanders',
+    inputs:[],outputs:[{id:10146,name:'Orange salamander',qty:1}]},
+  {name:'Red salamander',skill:'Hunter',level:59,xp:272,category:'Salamanders',
+    inputs:[],outputs:[{id:10147,name:'Red salamander',qty:1}]},
+  {name:'Black salamander',skill:'Hunter',level:67,xp:319,category:'Salamanders',
+    inputs:[],outputs:[{id:10148,name:'Black salamander',qty:1}]},
+  {name:'Herbiboar',skill:'Hunter',level:80,xp:1950,category:'Other',
+    inputs:[],outputs:[],notes:'Fossil Island. Drops herbs. Requires 31 Herblore. ~150k xp/hr'},
+  {name:'Bird house run (regular)',skill:'Hunter',level:5,xp:280,category:'Birdhouses',
+    inputs:[{id:1511,name:'Logs',qty:1},{id:8792,name:'Clockwork',qty:1}],outputs:[{id:5075,name:'Bird nest (empty)',qty:2}],notes:'Per house, avg 2 nests. Passive every 50 min'},
+  {name:'Bird house run (oak)',skill:'Hunter',level:14,xp:420,category:'Birdhouses',
+    inputs:[{id:1521,name:'Oak logs',qty:1},{id:8792,name:'Clockwork',qty:1}],outputs:[{id:5075,name:'Bird nest (empty)',qty:3}]},
+  {name:'Bird house run (willow)',skill:'Hunter',level:24,xp:560,category:'Birdhouses',
+    inputs:[{id:1519,name:'Willow logs',qty:1},{id:8792,name:'Clockwork',qty:1}],outputs:[{id:5075,name:'Bird nest (empty)',qty:4}]},
+  {name:'Bird house run (teak)',skill:'Hunter',level:34,xp:700,category:'Birdhouses',
+    inputs:[{id:6333,name:'Teak logs',qty:1},{id:8792,name:'Clockwork',qty:1}],outputs:[{id:5075,name:'Bird nest (empty)',qty:4}]},
+  {name:'Bird house run (maple)',skill:'Hunter',level:44,xp:820,category:'Birdhouses',
+    inputs:[{id:1517,name:'Maple logs',qty:1},{id:8792,name:'Clockwork',qty:1}],outputs:[{id:5075,name:'Bird nest (empty)',qty:5}]},
+  {name:'Bird house run (redwood)',skill:'Hunter',level:89,xp:1200,category:'Birdhouses',
+    inputs:[{id:19669,name:'Redwood logs',qty:1},{id:8792,name:'Clockwork',qty:1}],outputs:[{id:5075,name:'Bird nest (empty)',qty:5}]},
+
+  // ==== CODEX COVERAGE PASS: COMMON MISSING ROUTES ====
+  // Hitpoints / shared combat
+  {name:'Sand Crabs (shared HP)',skill:'Hitpoints',level:1,xp:1.33,category:'Training Spots',inputs:[],outputs:[],notes:'Passive HP XP while training combat. AFK early route'},
+  {name:'Ammonite Crabs (shared HP)',skill:'Hitpoints',level:1,xp:1.33,category:'Training Spots',inputs:[],outputs:[],notes:'Passive HP XP. Fossil Island, higher HP targets'},
+  {name:'Nightmare Zone (shared HP)',skill:'Hitpoints',level:1,xp:1.33,category:'Training Spots',inputs:[],outputs:[],notes:'Passive HP XP while using absorption/overload setups'},
+  {name:'Slayer melee tasks (shared HP)',skill:'Hitpoints',level:1,xp:1.33,category:'Training Spots',inputs:[],outputs:[],notes:'HP XP alongside Attack/Strength/Defence training'},
+  {name:'Chinning tunnels (shared HP)',skill:'Hitpoints',level:45,xp:1.33,category:'Ranged Training',inputs:[],outputs:[],notes:'HP XP alongside chinchompa Ranged training'},
+  {name:'Bursting/barraging tasks (shared HP)',skill:'Hitpoints',level:50,xp:1.33,category:'Magic Training',inputs:[],outputs:[],notes:'HP XP alongside combat Magic training'},
+
+  // More melee equipment checkpoints
+  {name:'Zombie axe',skill:'Attack',level:65,xp:0,category:'Weapons',
+    inputs:[{id:28810,name:'Zombie axe',qty:1}],outputs:[{id:28810,name:'Zombie axe',qty:1}],notes:'Strong mid-game crush/slash option. 65 Attack and Strength'},
+  {name:'Abyssal tentacle',skill:'Attack',level:75,xp:0,category:'Weapons',
+    inputs:[{id:4151,name:'Abyssal whip',qty:1},{id:12004,name:'Kraken tentacle',qty:1}],outputs:[{id:4151,name:'Abyssal whip',qty:1},{id:12004,name:'Kraken tentacle',qty:1}],notes:'Degrades. Higher DPS than whip for Attack/Defence'},
+  {name:'Ghrazi rapier',skill:'Attack',level:80,xp:0,category:'Weapons',
+    inputs:[{id:22324,name:'Ghrazi rapier',qty:1}],outputs:[{id:22324,name:'Ghrazi rapier',qty:1}],notes:'High-end stab weapon for Attack training'},
+  {name:'Osmumten\'s fang',skill:'Attack',level:82,xp:0,category:'Weapons',
+    inputs:[{id:26219,name:'Osmumten\'s fang',qty:1}],outputs:[{id:26219,name:'Osmumten\'s fang',qty:1}],notes:'Accurate stab weapon, excellent on high-defence targets'},
+  {name:'Scythe of vitur',skill:'Attack',level:90,xp:0,category:'Weapons',
+    inputs:[{id:22486,name:'Scythe of vitur (uncharged)',qty:1}],outputs:[{id:22486,name:'Scythe of vitur (uncharged)',qty:1}],notes:'Endgame slash/crush. Charge cost not included'},
+  {name:'Zombie axe (Strength)',skill:'Strength',level:65,xp:0,category:'Weapons',
+    inputs:[{id:28810,name:'Zombie axe',qty:1}],outputs:[{id:28810,name:'Zombie axe',qty:1}],notes:'Very strong mid-game Strength option'},
+  {name:'Obsidian sword setup',skill:'Strength',level:60,xp:0,category:'Weapons',
+    inputs:[{id:6523,name:'Toktz-xil-ak',qty:1}],outputs:[{id:6523,name:'Toktz-xil-ak',qty:1}],notes:'Pairs with berserker necklace and obsidian armour in NMZ'},
+  {name:'Dharok\'s greataxe NMZ',skill:'Strength',level:70,xp:0,category:'Weapons',
+    inputs:[{id:4718,name:'Dharok\'s greataxe',qty:1}],outputs:[{id:4718,name:'Dharok\'s greataxe',qty:1}],notes:'High HP/Strength NMZ method with full Dharok set'},
+  {name:'Blade of saeldor',skill:'Strength',level:80,xp:0,category:'Weapons',
+    inputs:[{id:23997,name:'Blade of saeldor (inactive)',qty:1}],outputs:[{id:23997,name:'Blade of saeldor (inactive)',qty:1}],notes:'High-end slash Strength/Attack option'},
+  {name:'Bandos chestplate',skill:'Defence',level:65,xp:0,category:'Armour',
+    inputs:[{id:11832,name:'Bandos chestplate',qty:1}],outputs:[{id:11832,name:'Bandos chestplate',qty:1}],notes:'Common melee strength armour checkpoint'},
+  {name:'Torva platebody',skill:'Defence',level:80,xp:0,category:'Armour',
+    inputs:[{id:26384,name:'Torva platebody',qty:1}],outputs:[{id:26384,name:'Torva platebody',qty:1}],notes:'Endgame melee armour checkpoint'},
+
+  // Ranged weapons and ammo routes
+  {name:'Rune crossbow',skill:'Ranged',level:61,xp:0,category:'Crossbows',
+    inputs:[{id:9185,name:'Rune crossbow',qty:1}],outputs:[{id:9185,name:'Rune crossbow',qty:1}],notes:'Budget crossbow route; pair with broad/ruby/diamond bolts'},
+  {name:'Dragon crossbow',skill:'Ranged',level:64,xp:0,category:'Crossbows',
+    inputs:[{id:21902,name:'Dragon crossbow',qty:1}],outputs:[{id:21902,name:'Dragon crossbow',qty:1}],notes:'Mid-tier crossbow upgrade with dragon bolts'},
+  {name:'Armadyl crossbow',skill:'Ranged',level:70,xp:0,category:'Crossbows',
+    inputs:[{id:11785,name:'Armadyl crossbow',qty:1}],outputs:[{id:11785,name:'Armadyl crossbow',qty:1}],notes:'High-tier one-handed crossbow'},
+  {name:'Twisted bow',skill:'Ranged',level:75,xp:0,category:'Bows',
+    inputs:[{id:20997,name:'Twisted bow',qty:1}],outputs:[{id:20997,name:'Twisted bow',qty:1}],notes:'Endgame bow; best against high Magic targets'},
+  {name:'Ruby dragon bolts (e)',skill:'Ranged',level:64,xp:0,category:'Bolts',
+    inputs:[{id:21944,name:'Ruby dragon bolts (e)',qty:1}],outputs:[],notes:'Bossing bolt, consumed/recovered per shot'},
+  {name:'Diamond dragon bolts (e)',skill:'Ranged',level:64,xp:0,category:'Bolts',
+    inputs:[{id:21946,name:'Diamond dragon bolts (e)',qty:1}],outputs:[],notes:'Bossing bolt, consumed/recovered per shot'},
+
+  // Magic combat and utility gaps
+  {name:'Low Level Alchemy',skill:'Magic',level:21,xp:31,category:'Alchemy',
+    inputs:[{id:561,name:'Nature rune',qty:1},{id:554,name:'Fire rune',qty:3}],outputs:[],notes:'Item value not modelled; add the target item manually in notes when comparing'},
+  {name:'Fire Strike',skill:'Magic',level:13,xp:11.5,category:'Combat Spells',
+    inputs:[{id:556,name:'Air rune',qty:2},{id:554,name:'Fire rune',qty:3},{id:558,name:'Mind rune',qty:1}],outputs:[],notes:'Early combat Magic'},
+  {name:'Fire Bolt',skill:'Magic',level:35,xp:22.5,category:'Combat Spells',
+    inputs:[{id:556,name:'Air rune',qty:3},{id:554,name:'Fire rune',qty:4},{id:562,name:'Chaos rune',qty:1}],outputs:[],notes:'Pairs well with chaos gauntlets'},
+  {name:'Fire Blast',skill:'Magic',level:59,xp:34.5,category:'Combat Spells',
+    inputs:[{id:556,name:'Air rune',qty:4},{id:554,name:'Fire rune',qty:5},{id:560,name:'Death rune',qty:1}],outputs:[],notes:'Standard spellbook combat training'},
+  {name:'Ice Burst',skill:'Magic',level:70,xp:46.5,category:'Ancient Magicks',
+    inputs:[{id:555,name:'Water rune',qty:4},{id:560,name:'Death rune',qty:2},{id:562,name:'Chaos rune',qty:4}],outputs:[],notes:'Bursting dust devils/nechryaels/monkey tunnels'},
+  {name:'Blood Burst',skill:'Magic',level:68,xp:45.5,category:'Ancient Magicks',
+    inputs:[{id:565,name:'Blood rune',qty:2},{id:560,name:'Death rune',qty:2},{id:562,name:'Chaos rune',qty:4}],outputs:[],notes:'Sustain-focused bursting option'},
+  {name:'Ice Barrage',skill:'Magic',level:94,xp:52,category:'Ancient Magicks',
+    inputs:[{id:555,name:'Water rune',qty:6},{id:565,name:'Blood rune',qty:2},{id:560,name:'Death rune',qty:4}],outputs:[],notes:'Fastest multi-target Magic XP where stackable'},
+  {name:'Telekinetic Grab',skill:'Magic',level:33,xp:43,category:'Utility',
+    inputs:[{id:563,name:'Law rune',qty:1},{id:556,name:'Air rune',qty:1}],outputs:[],notes:'Niche utility spell'},
+
+  // Prayer bones, ashes, and altars
+  {name:'Baby dragon bones (gilded altar)',skill:'Prayer',level:1,xp:105,category:'Gilded Altar',
+    inputs:[{id:534,name:'Babydragon bones',qty:1}],outputs:[]},
+  {name:'Wyvern bones (gilded altar)',skill:'Prayer',level:1,xp:252,category:'Gilded Altar',
+    inputs:[{id:6812,name:'Wyvern bones',qty:1}],outputs:[]},
+  {name:'Wyrm bones (gilded altar)',skill:'Prayer',level:1,xp:175,category:'Gilded Altar',
+    inputs:[{id:22780,name:'Wyrm bones',qty:1}],outputs:[]},
+  {name:'Zogre bones (gilded altar)',skill:'Prayer',level:1,xp:78.8,category:'Gilded Altar',
+    inputs:[{id:4812,name:'Zogre bones',qty:1}],outputs:[]},
+  {name:'Fayrg bones (gilded altar)',skill:'Prayer',level:1,xp:294,category:'Gilded Altar',
+    inputs:[{id:4830,name:'Fayrg bones',qty:1}],outputs:[]},
+  {name:'Raurg bones (gilded altar)',skill:'Prayer',level:1,xp:336,category:'Gilded Altar',
+    inputs:[{id:4832,name:'Raurg bones',qty:1}],outputs:[]},
+  {name:'Wolf bones (bury)',skill:'Prayer',level:1,xp:4.5,category:'Burying',
+    inputs:[{id:2859,name:'Wolf bones',qty:1}],outputs:[]},
+  {name:'Bat bones (bury)',skill:'Prayer',level:1,xp:5.3,category:'Burying',
+    inputs:[{id:530,name:'Bat bones',qty:1}],outputs:[]},
+  {name:'Infernal ashes (scatter)',skill:'Prayer',level:1,xp:110,category:'Ashes',
+    inputs:[{id:25778,name:'Infernal ashes',qty:1}],outputs:[]},
+  {name:'Abyssal ashes (scatter)',skill:'Prayer',level:1,xp:85,category:'Ashes',
+    inputs:[{id:25775,name:'Abyssal ashes',qty:1}],outputs:[]},
+  {name:'Malicious ashes (scatter)',skill:'Prayer',level:1,xp:65,category:'Ashes',
+    inputs:[{id:25772,name:'Malicious ashes',qty:1}],outputs:[]},
+  {name:'Vile ashes (scatter)',skill:'Prayer',level:1,xp:25,category:'Ashes',
+    inputs:[{id:25769,name:'Vile ashes',qty:1}],outputs:[]},
+  {name:'Ensouled minotaur head',skill:'Prayer',level:1,xp:364,category:'Ensouled Heads',
+    inputs:[{id:13457,name:'Ensouled minotaur head',qty:1}],outputs:[],notes:'Requires Arceuus reanimation spell'},
+  {name:'Ensouled scorpion head',skill:'Prayer',level:1,xp:454,category:'Ensouled Heads',
+    inputs:[{id:13460,name:'Ensouled scorpion head',qty:1}],outputs:[],notes:'Requires Arceuus reanimation spell'},
+  {name:'Ensouled monkey head',skill:'Prayer',level:1,xp:420,category:'Ensouled Heads',
+    inputs:[{id:13451,name:'Ensouled monkey head',qty:1}],outputs:[],notes:'Requires Arceuus reanimation spell'},
+
+  // Farming patches Claude still skipped
+  {name:'Teak tree',skill:'Farming',level:35,xp:7325,category:'Hardwood Trees',
+    inputs:[{id:21477,name:'Teak sapling',qty:1},{id:225,name:'Limpwurt root',qty:15}],outputs:[],notes:'Fossil Island hardwood patch. Includes planting XP and protection payment'},
+  {name:'Mahogany tree',skill:'Farming',level:55,xp:15783,category:'Hardwood Trees',
+    inputs:[{id:21480,name:'Mahogany sapling',qty:1},{id:5998,name:'Yanillian hops',qty:25}],outputs:[],notes:'Fossil Island hardwood patch. Includes planting XP and protection payment'},
+  {name:'Whiteberry bush',skill:'Farming',level:59,xp:437.5,category:'Bushes',
+    inputs:[{id:5105,name:'Whiteberry seed',qty:1}],outputs:[{id:239,name:'White berries',qty:4}],notes:'Useful Herblore secondary'},
+  {name:'Poison ivy bush',skill:'Farming',level:70,xp:674,category:'Bushes',
+    inputs:[{id:5106,name:'Poison ivy seed',qty:1}],outputs:[{id:6018,name:'Poison ivy berries',qty:4}],notes:'Never diseased'},
+  {name:'Jangerberry bush',skill:'Farming',level:48,xp:284.5,category:'Bushes',
+    inputs:[{id:5104,name:'Jangerberry seed',qty:1}],outputs:[{id:247,name:'Jangerberries',qty:4}]},
+  {name:'Cactus',skill:'Farming',level:55,xp:374,category:'Cactus',
+    inputs:[{id:5280,name:'Cactus seed',qty:1}],outputs:[{id:6016,name:'Cactus spine',qty:3}],notes:'Useful yew/celastrus protection payment'},
+  {name:'Potato cactus',skill:'Farming',level:64,xp:374,category:'Cactus',
+    inputs:[{id:22873,name:'Potato cactus seed',qty:1}],outputs:[{id:3138,name:'Potato cactus',qty:6}],notes:'Herblore secondary'},
+  {name:'Cave nightshade',skill:'Farming',level:63,xp:512,category:'Special Patches',
+    inputs:[{id:5281,name:'Belladonna seed',qty:1}],outputs:[],notes:'Cave nightshade is not priced by the GE mapping'},
+  {name:'Bittercap mushrooms',skill:'Farming',level:53,xp:255,category:'Special Patches',
+    inputs:[{id:5282,name:'Mushroom spore',qty:1}],outputs:[{id:6004,name:'Mushroom',qty:6}]},
+  {name:'Crystal tree',skill:'Farming',level:74,xp:13240,category:'Special Trees',
+    inputs:[],outputs:[],notes:'Prifddinas crystal tree patch; crystal acorn and shards are not tradeable'},
+
+  // Hops patches
+  {name:'Barley hops patch',skill:'Farming',level:3,xp:40,category:'Hops',
+    inputs:[{id:5305,name:'Barley seed',qty:4},{id:21483,name:'Ultracompost',qty:1}],outputs:[{id:6006,name:'Barley',qty:5}],notes:'Average 5 harvests per patch model'},
+  {name:'Hammerstone hops',skill:'Farming',level:4,xp:59,category:'Hops',
+    inputs:[{id:5307,name:'Hammerstone seed',qty:4},{id:21483,name:'Ultracompost',qty:1}],outputs:[{id:5994,name:'Hammerstone hops',qty:5}],notes:'9 planting XP + average 5 harvests'},
+  {name:'Asgarnian hops',skill:'Farming',level:8,xp:70.5,category:'Hops',
+    inputs:[{id:5308,name:'Asgarnian seed',qty:4},{id:21483,name:'Ultracompost',qty:1}],outputs:[{id:5996,name:'Asgarnian hops',qty:5}],notes:'Average 5 harvests per patch model'},
+  {name:'Jute fibre',skill:'Farming',level:13,xp:85.5,category:'Hops',
+    inputs:[{id:5306,name:'Jute seed',qty:3},{id:21483,name:'Ultracompost',qty:1}],outputs:[{id:5931,name:'Jute fibre',qty:5}],notes:'13 planting XP + average 5 harvests'},
+  {name:'Yanillian hops',skill:'Farming',level:16,xp:94.5,category:'Hops',
+    inputs:[{id:5309,name:'Yanillian seed',qty:4},{id:21483,name:'Ultracompost',qty:1}],outputs:[{id:5998,name:'Yanillian hops',qty:5}],notes:'14.5 planting XP + average 5 harvests. Used for mahogany protection'},
+  {name:'Krandorian hops',skill:'Farming',level:21,xp:115,category:'Hops',
+    inputs:[{id:5310,name:'Krandorian seed',qty:4},{id:21483,name:'Ultracompost',qty:1}],outputs:[{id:6000,name:'Krandorian hops',qty:5}],notes:'17.5 planting XP + average 5 harvests'},
+  {name:'Wildblood hops',skill:'Farming',level:28,xp:153,category:'Hops',
+    inputs:[{id:5311,name:'Wildblood seed',qty:4},{id:21483,name:'Ultracompost',qty:1}],outputs:[{id:6002,name:'Wildblood hops',qty:5}],notes:'23 planting XP + average 5 harvests'},
+
+  // Cooking foods and pies
+  {name:'Cook herring',skill:'Cooking',level:5,xp:50,category:'Fish',
+    inputs:[{id:345,name:'Raw herring',qty:1}],outputs:[{id:347,name:'Herring',qty:1}]},
+  {name:'Cook cod',skill:'Cooking',level:18,xp:75,category:'Fish',
+    inputs:[{id:341,name:'Raw cod',qty:1}],outputs:[{id:339,name:'Cod',qty:1}]},
+  {name:'Cook sea turtle',skill:'Cooking',level:82,xp:211.3,category:'Fish',
+    inputs:[{id:395,name:'Raw sea turtle',qty:1}],outputs:[{id:397,name:'Sea turtle',qty:1}]},
+  {name:'Cook manta ray',skill:'Cooking',level:91,xp:216.3,category:'Fish',
+    inputs:[{id:389,name:'Raw manta ray',qty:1}],outputs:[{id:391,name:'Manta ray',qty:1}]},
+  {name:'Admiral pie',skill:'Cooking',level:70,xp:210,category:'Pies',
+    inputs:[{id:7196,name:'Raw admiral pie',qty:1}],outputs:[{id:7198,name:'Admiral pie',qty:1}]},
+  {name:'Wild pie',skill:'Cooking',level:85,xp:240,category:'Pies',
+    inputs:[{id:7206,name:'Raw wild pie',qty:1}],outputs:[{id:7208,name:'Wild pie',qty:1}]},
+  {name:'Summer pie',skill:'Cooking',level:95,xp:260,category:'Pies',
+    inputs:[{id:7216,name:'Raw summer pie',qty:1}],outputs:[{id:7218,name:'Summer pie',qty:1}]},
+  {name:'Meat pizza',skill:'Cooking',level:45,xp:169,category:'Pizzas',
+    inputs:[{id:2289,name:'Plain pizza',qty:1},{id:2142,name:'Cooked meat',qty:1}],outputs:[{id:2293,name:'Meat pizza',qty:1}]},
+  {name:'Anchovy pizza',skill:'Cooking',level:55,xp:182,category:'Pizzas',
+    inputs:[{id:2289,name:'Plain pizza',qty:1},{id:319,name:'Anchovies',qty:1}],outputs:[{id:2297,name:'Anchovy pizza',qty:1}]},
+
+  // Woodcutting, Mining, and Fishing activity coverage
+  {name:'Cut blisterwood tree',skill:'Woodcutting',level:76,xp:200,category:'Trees',
+    inputs:[],outputs:[],notes:'Requires Sins of the Father; blisterwood logs are not tradeable'},
+  {name:'Cut sulliusceps',skill:'Woodcutting',level:65,xp:127,category:'Trees',
+    inputs:[],outputs:[],notes:'Fossil Island route, strong XP and fossils'},
+  {name:'Forestry events',skill:'Woodcutting',level:15,xp:0,category:'Forestry',
+    inputs:[],outputs:[],notes:'Supplemental XP/rewards while woodcutting with others'},
+  {name:'Mine sandstone (10kg)',skill:'Mining',level:35,xp:60,category:'Other',
+    inputs:[],outputs:[{id:6977,name:'Sandstone (10kg)',qty:1}],notes:'Common ironman crafting bank method'},
+  {name:'Mine granite (5kg)',skill:'Mining',level:45,xp:75,category:'Other',
+    inputs:[],outputs:[{id:6983,name:'Granite (5kg)',qty:1}],notes:'High-effort desert Mining XP'},
+  {name:'Motherlode Mine pay-dirt',skill:'Mining',level:30,xp:60,category:'Minigames',
+    inputs:[],outputs:[{id:453,name:'Coal',qty:0.35},{id:444,name:'Gold ore',qty:0.18},{id:447,name:'Mithril ore',qty:0.12},{id:449,name:'Adamantite ore',qty:0.04},{id:451,name:'Runite ore',qty:0.005}],notes:'Average pay-dirt ore model; golden nuggets are untradeable'},
+  {name:'Blast Mine dynamite',skill:'Mining',level:43,xp:55,category:'Minigames',
+    inputs:[{id:13573,name:'Dynamite',qty:1}],outputs:[],notes:'Ore output depends on Mining level'},
+  {name:'Volcanic Mine game',skill:'Mining',level:50,xp:7000,category:'Minigames',
+    inputs:[],outputs:[],notes:'Average successful game model; reward points/fossils not priced'},
+  {name:'Mine volcanic ash',skill:'Mining',level:22,xp:10,category:'Other',
+    inputs:[],outputs:[{id:21622,name:'Volcanic ash',qty:1}],notes:'Used for ultracompost'},
+  {name:'Fish herring',skill:'Fishing',level:10,xp:30,category:'Fish',
+    inputs:[],outputs:[{id:345,name:'Raw herring',qty:1}]},
+  {name:'Fish cod',skill:'Fishing',level:23,xp:45,category:'Fish',
+    inputs:[],outputs:[{id:341,name:'Raw cod',qty:1}]},
+  {name:'Fish sea turtles',skill:'Fishing',level:79,xp:38,category:'Fish',
+    inputs:[],outputs:[{id:395,name:'Raw sea turtle',qty:1}],notes:'Fishing Trawler / drift net sources vary'},
+  {name:'Fish manta rays',skill:'Fishing',level:81,xp:46,category:'Fish',
+    inputs:[],outputs:[{id:389,name:'Raw manta ray',qty:1}],notes:'Fishing Trawler / drift net sources vary'},
+  {name:'Tempoross game',skill:'Fishing',level:35,xp:4500,category:'Minigames',
+    inputs:[],outputs:[{id:359,name:'Raw tuna',qty:8},{id:371,name:'Raw swordfish',qty:5},{id:383,name:'Raw shark',qty:2},{id:405,name:'Casket',qty:0.12}],notes:'Average mid/high-level reward model; uniques and spirit flakes not priced'},
+  {name:'Aerial fishing',skill:'Fishing',level:43,xp:0,category:'Minigames',
+    inputs:[],outputs:[],notes:'Also gives Hunter XP. Average pearl/fish rewards are mostly untradeable'},
+
+  // Firemaking alternatives
+  {name:'Wintertodt mass world',skill:'Firemaking',level:50,xp:500,category:'Minigames',
+    inputs:[],outputs:[{id:1517,name:'Maple logs',qty:8},{id:1515,name:'Yew logs',qty:1.5},{id:995,name:'Coins',qty:800}],notes:'Average reward model per 500 contribution points; uniques not priced'},
+  {name:'Wintertodt solo',skill:'Firemaking',level:50,xp:13500,category:'Minigames',
+    inputs:[],outputs:[{id:1517,name:'Maple logs',qty:80},{id:1515,name:'Yew logs',qty:12},{id:995,name:'Coins',qty:8000}],notes:'Average long solo reward model; includes more side XP opportunities'},
+  {name:'Burn teak logs',skill:'Firemaking',level:35,xp:105,category:'Logs',
+    inputs:[{id:6333,name:'Teak logs',qty:1}],outputs:[]},
+  {name:'Burn mahogany logs',skill:'Firemaking',level:50,xp:157.5,category:'Logs',
+    inputs:[{id:6332,name:'Mahogany logs',qty:1}],outputs:[]},
+  {name:'Burn magic pyre logs',skill:'Firemaking',level:80,xp:404.5,category:'Pyre Logs',
+    inputs:[{id:3448,name:'Magic pyre logs',qty:1}],outputs:[],notes:'Shades of Mort\'ton route'},
+  {name:'Burn redwood pyre logs',skill:'Firemaking',level:95,xp:500,category:'Pyre Logs',
+    inputs:[{id:19672,name:'Redwood pyre logs',qty:1}],outputs:[],notes:'Highest pyre log tier'},
+
+  // Hunter and Slayer activity gaps
+  {name:'Falconry spotted kebbits',skill:'Hunter',level:43,xp:104,category:'Falconry',inputs:[],outputs:[{id:10125,name:'Spotted kebbit fur',qty:1}],notes:'Piscatoris falconry'},
+  {name:'Falconry dark kebbits',skill:'Hunter',level:57,xp:132,category:'Falconry',inputs:[],outputs:[{id:10115,name:'Dark kebbit fur',qty:1}],notes:'Piscatoris falconry'},
+  {name:'Falconry dashing kebbits',skill:'Hunter',level:69,xp:156,category:'Falconry',inputs:[],outputs:[{id:10127,name:'Dashing kebbit fur',qty:1}],notes:'Piscatoris falconry'},
+  {name:'Drift net fishing',skill:'Hunter',level:44,xp:720,category:'Other',inputs:[{id:21652,name:'Drift net',qty:1}],outputs:[{id:21555,name:'Numulite',qty:10},{id:359,name:'Raw tuna',qty:1.4},{id:371,name:'Raw swordfish',qty:0.8},{id:383,name:'Raw shark',qty:0.25}],notes:'Average net model; also gives Fishing XP'},
+  {name:'Hunter rumours',skill:'Hunter',level:46,xp:5000,category:'Rumours',inputs:[],outputs:[{id:10125,name:'Spotted kebbit fur',qty:0.4},{id:10127,name:'Dashing kebbit fur',qty:0.25},{id:21555,name:'Numulite',qty:35}],notes:'Average contract reward model; sacks and uniques not fully priced'},
+  {name:'Dust devils',skill:'Slayer',level:65,xp:105,category:'Monsters',inputs:[],outputs:[],notes:'Burst/barrage in Catacombs; dust mask/slayer helm required'},
+  {name:'Aberrant spectres',skill:'Slayer',level:60,xp:90,category:'Monsters',inputs:[],outputs:[],notes:'Herb-heavy tasks; nose peg/slayer helm required'},
+  {name:'Bloodvelds',skill:'Slayer',level:50,xp:120,category:'Monsters',inputs:[],outputs:[],notes:'High HP, good cannon/barrage variants'},
+  {name:'Wyrms',skill:'Slayer',level:62,xp:133,category:'Monsters',inputs:[],outputs:[{id:22780,name:'Wyrm bones',qty:1}],notes:'Karuulm Slayer Dungeon'},
+  {name:'Drakes',skill:'Slayer',level:84,xp:268,category:'Monsters',inputs:[],outputs:[{id:22783,name:'Drake bones',qty:1}],notes:'Karuulm Slayer Dungeon'},
+  {name:'Alchemical Hydra',skill:'Slayer',level:95,xp:1320,category:'Slayer Bosses',inputs:[],outputs:[{id:22786,name:'Hydra bones',qty:1}],notes:'Boss kill XP; hydra uniques not modelled'},
+
+  // Runecraft, Construction, Herblore, Fletching, Smithing additions
+  {name:'Guardians of the Rift game',skill:'Runecraft',level:27,xp:3500,category:'Minigames',inputs:[],outputs:[{id:556,name:'Air rune',qty:450},{id:555,name:'Water rune',qty:250},{id:561,name:'Nature rune',qty:45},{id:560,name:'Death rune',qty:25},{id:565,name:'Blood rune',qty:8},{id:5516,name:'Elemental talisman',qty:0.02},{id:26798,name:'Catalytic talisman',qty:0.02}],notes:'Average reward model; abyssal pearls and uniques not priced'},
+  {name:'Craft mist runes',skill:'Runecraft',level:6,xp:8,category:'Combination Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1},{id:555,name:'Water rune',qty:1}],outputs:[{id:4695,name:'Mist rune',qty:1}]},
+  {name:'Craft dust runes',skill:'Runecraft',level:10,xp:8.3,category:'Combination Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:1},{id:557,name:'Earth rune',qty:1}],outputs:[{id:4696,name:'Dust rune',qty:1}]},
+  {name:'Daeyalt essence ZMI average inventory',skill:'Runecraft',level:50,xp:1950,category:'Runes',inputs:[],outputs:[{id:556,name:'Air rune',qty:120},{id:561,name:'Nature rune',qty:25},{id:563,name:'Law rune',qty:16},{id:560,name:'Death rune',qty:9},{id:565,name:'Blood rune',qty:3}],notes:'Average inventory using untradeable daeyalt essence'},
+  {name:'Mahogany Homes novice contract',skill:'Construction',level:1,xp:2000,category:'Mahogany Homes',inputs:[{id:960,name:'Plank',qty:8}],outputs:[],notes:'Average novice contract model'},
+  {name:'Mahogany Homes adept contract',skill:'Construction',level:50,xp:4500,category:'Mahogany Homes',inputs:[{id:8780,name:'Teak plank',qty:10}],outputs:[],notes:'Average teak-plank contract model'},
+  {name:'Mahogany Homes expert contract',skill:'Construction',level:70,xp:6000,category:'Mahogany Homes',inputs:[{id:8782,name:'Mahogany plank',qty:10}],outputs:[],notes:'Average mahogany-plank contract model'},
+  {name:'Oak plank',skill:'Construction',level:1,xp:60,category:'Planks',
+    inputs:[{id:8778,name:'Oak plank',qty:1}],outputs:[],notes:'Base XP per oak plank used'},
+  {name:'Mahogany plank',skill:'Construction',level:1,xp:140,category:'Planks',
+    inputs:[{id:8782,name:'Mahogany plank',qty:1}],outputs:[],notes:'Base XP per mahogany plank used'},
+  {name:'Zamorak brew',skill:'Herblore',level:78,xp:175,category:'Potions',
+    inputs:[{id:111,name:'Torstol potion (unf)',qty:1},{id:247,name:'Jangerberries',qty:1}],outputs:[{id:2450,name:'Zamorak brew(4)',qty:1}]},
+  {name:'Extended super antifire',skill:'Herblore',level:98,xp:40,category:'Potions',
+    inputs:[{id:21978,name:'Super antifire potion(4)',qty:1},{id:11994,name:'Lava scale shard',qty:4}],outputs:[{id:22209,name:'Extended super antifire(4)',qty:1}]},
+  {name:'Divine super combat potion',skill:'Herblore',level:97,xp:162,category:'Divine Potions',
+    inputs:[{id:12695,name:'Super combat potion(4)',qty:1}],outputs:[{id:23685,name:'Divine super combat potion(4)',qty:1}],notes:'Average market delta excluding untradeable crystal dust'},
+  {name:'Amethyst arrows (x15)',skill:'Fletching',level:82,xp:202.5,category:'Amethyst',
+    inputs:[{id:21350,name:'Amethyst arrowtips',qty:15},{id:53,name:'Headless arrow',qty:15}],outputs:[{id:21326,name:'Amethyst arrow',qty:15}]},
+  {name:'Dragon arrows (x15)',skill:'Fletching',level:90,xp:225,category:'Ammo',
+    inputs:[{id:11237,name:'Dragon arrowtips',qty:15},{id:53,name:'Headless arrow',qty:15}],outputs:[{id:11212,name:'Dragon arrow',qty:15}]},
+  {name:'Ruby dragon bolts (e) (x10)',skill:'Fletching',level:84,xp:82,category:'Bolts',
+    inputs:[{id:21967,name:'Ruby dragon bolts',qty:10},{id:564,name:'Cosmic rune',qty:1}],outputs:[{id:21944,name:'Ruby dragon bolts (e)',qty:10}],notes:'Magic enchantment also gives Magic XP'},
+  {name:'Diamond dragon bolts (e) (x10)',skill:'Fletching',level:84,xp:82,category:'Bolts',
+    inputs:[{id:21969,name:'Diamond dragon bolts',qty:10},{id:564,name:'Cosmic rune',qty:1}],outputs:[{id:21946,name:'Diamond dragon bolts (e)',qty:10}],notes:'Magic enchantment also gives Magic XP'},
+  {name:'Battlestaff from celastrus bark',skill:'Fletching',level:40,xp:80,category:'Battlestaves',
+    inputs:[{id:22935,name:'Celastrus bark',qty:1}],outputs:[{id:1391,name:'Battlestaff',qty:1}],notes:'Knife on celastrus bark'},
+  {name:'Giants\' Foundry steel/mithril sword',skill:'Smithing',level:50,xp:15000,category:'Giants Foundry',
+    inputs:[{id:2353,name:'Steel bar',qty:14},{id:2359,name:'Mithril bar',qty:14}],outputs:[{id:995,name:'Coins',qty:18000}],notes:'Average 14/14 alloy sword model; exact score depends on moulds'},
+  {name:'Gold bracelets',skill:'Smithing',level:7,xp:25,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1}],outputs:[{id:11069,name:'Gold bracelet',qty:1}],notes:'Crafting XP route listed here for bar sink comparison'},
+  {name:'Mithril knives (x5)',skill:'Smithing',level:57,xp:50,category:'Knives',
+    inputs:[{id:2359,name:'Mithril bar',qty:1}],outputs:[{id:866,name:'Mithril knife',qty:5}]},
+  {name:'Adamant knives (x5)',skill:'Smithing',level:77,xp:62.5,category:'Knives',
+    inputs:[{id:2361,name:'Adamantite bar',qty:1}],outputs:[{id:867,name:'Adamant knife',qty:5}]},
+  {name:'Rune knives (x5)',skill:'Smithing',level:92,xp:75,category:'Knives',
+    inputs:[{id:2363,name:'Runite bar',qty:1}],outputs:[{id:868,name:'Rune knife',qty:5}]},
+
+  // ==== CODEX EXPANSION PASS: MORE MISSED METHODS ====
+  // Herblore cleaning and alternate methods
+  {name:'Clean guam leaf',skill:'Herblore',level:3,xp:2.5,category:'Cleaning Herbs',
+    inputs:[{id:199,name:'Grimy guam leaf',qty:1}],outputs:[{id:249,name:'Guam leaf',qty:1}]},
+  {name:'Clean marrentill',skill:'Herblore',level:5,xp:3.8,category:'Cleaning Herbs',
+    inputs:[{id:201,name:'Grimy marrentill',qty:1}],outputs:[{id:251,name:'Marrentill',qty:1}]},
+  {name:'Clean tarromin',skill:'Herblore',level:11,xp:5,category:'Cleaning Herbs',
+    inputs:[{id:203,name:'Grimy tarromin',qty:1}],outputs:[{id:253,name:'Tarromin',qty:1}]},
+  {name:'Clean harralander',skill:'Herblore',level:20,xp:6.3,category:'Cleaning Herbs',
+    inputs:[{id:205,name:'Grimy harralander',qty:1}],outputs:[{id:255,name:'Harralander',qty:1}]},
+  {name:'Clean ranarr weed',skill:'Herblore',level:25,xp:7.5,category:'Cleaning Herbs',
+    inputs:[{id:207,name:'Grimy ranarr weed',qty:1}],outputs:[{id:257,name:'Ranarr weed',qty:1}]},
+  {name:'Clean snapdragon',skill:'Herblore',level:59,xp:11.8,category:'Cleaning Herbs',
+    inputs:[{id:3051,name:'Grimy snapdragon',qty:1}],outputs:[{id:3000,name:'Snapdragon',qty:1}]},
+  {name:'Clean torstol',skill:'Herblore',level:75,xp:15,category:'Cleaning Herbs',
+    inputs:[{id:219,name:'Grimy torstol',qty:1}],outputs:[{id:269,name:'Torstol',qty:1}]},
+  {name:'Guam tar (x15)',skill:'Herblore',level:19,xp:30,category:'Swamp Tars',
+    inputs:[{id:249,name:'Guam leaf',qty:1},{id:1939,name:'Swamp tar',qty:15}],outputs:[{id:10142,name:'Guam tar',qty:15}]},
+  {name:'Marrentill tar (x15)',skill:'Herblore',level:31,xp:42.5,category:'Swamp Tars',
+    inputs:[{id:251,name:'Marrentill',qty:1},{id:1939,name:'Swamp tar',qty:15}],outputs:[{id:10143,name:'Marrentill tar',qty:15}]},
+  {name:'Tarromin tar (x15)',skill:'Herblore',level:39,xp:55,category:'Swamp Tars',
+    inputs:[{id:253,name:'Tarromin',qty:1},{id:1939,name:'Swamp tar',qty:15}],outputs:[{id:10144,name:'Tarromin tar',qty:15}]},
+  {name:'Harralander tar (x15)',skill:'Herblore',level:44,xp:72.5,category:'Swamp Tars',
+    inputs:[{id:255,name:'Harralander',qty:1},{id:1939,name:'Swamp tar',qty:15}],outputs:[{id:10145,name:'Harralander tar',qty:15}]},
+  {name:'Antipoison',skill:'Herblore',level:5,xp:37.5,category:'Potions',
+    inputs:[{id:93,name:'Marrentill potion (unf)',qty:1},{id:235,name:'Unicorn horn dust',qty:1}],outputs:[{id:175,name:'Antipoison(3)',qty:1}]},
+  {name:'Restore potion',skill:'Herblore',level:22,xp:62.5,category:'Potions',
+    inputs:[{id:95,name:'Tarromin potion (unf)',qty:1},{id:223,name:"Red spiders' eggs",qty:1}],outputs:[{id:127,name:'Restore potion(3)',qty:1}]},
+  {name:'Agility potion',skill:'Herblore',level:34,xp:80,category:'Potions',
+    inputs:[{id:3002,name:'Toadflax potion (unf)',qty:1},{id:2152,name:'Toad\'s legs',qty:1}],outputs:[{id:3034,name:'Agility potion(3)',qty:1}]},
+  {name:'Hunter potion',skill:'Herblore',level:53,xp:120,category:'Potions',
+    inputs:[{id:103,name:'Avantoe potion (unf)',qty:1},{id:10111,name:'Kebbit teeth dust',qty:1}],outputs:[{id:10000,name:'Hunter potion(3)',qty:1}]},
+  {name:'Bastion potion',skill:'Herblore',level:80,xp:155,category:'Potions',
+    inputs:[{id:22443,name:'Cadantine blood potion (unf)',qty:1},{id:245,name:'Wine of zamorak',qty:1}],outputs:[{id:22461,name:'Bastion potion(4)',qty:1}]},
+  {name:'Battlemage potion',skill:'Herblore',level:80,xp:155,category:'Potions',
+    inputs:[{id:22443,name:'Cadantine blood potion (unf)',qty:1},{id:3138,name:'Potato cactus',qty:1}],outputs:[{id:22449,name:'Battlemage potion(4)',qty:1}]},
+  {name:'Anti-venom',skill:'Herblore',level:87,xp:120,category:'Potions',
+    inputs:[{id:12905,name:'Anti-venom(4)',qty:1}],outputs:[{id:12905,name:'Anti-venom(4)',qty:1}],notes:'Base potion listed for comparison; zulrah scale ingredient not separately priced here'},
+  {name:'Anti-venom+',skill:'Herblore',level:94,xp:125,category:'Potions',
+    inputs:[{id:12905,name:'Anti-venom(4)',qty:1},{id:6051,name:'Magic roots',qty:1}],outputs:[{id:12913,name:'Anti-venom+(4)',qty:1}]},
+  {name:'Divine super attack potion',skill:'Herblore',level:70,xp:2,category:'Divine Potions',
+    inputs:[{id:2436,name:'Super attack(4)',qty:1}],outputs:[{id:23697,name:'Divine super attack potion(4)',qty:1}],notes:'Average market delta excluding untradeable crystal dust'},
+  {name:'Divine super strength potion',skill:'Herblore',level:70,xp:2,category:'Divine Potions',
+    inputs:[{id:2440,name:'Super strength(4)',qty:1}],outputs:[{id:23709,name:'Divine super strength potion(4)',qty:1}],notes:'Average market delta excluding untradeable crystal dust'},
+  {name:'Divine super defence potion',skill:'Herblore',level:70,xp:2,category:'Divine Potions',
+    inputs:[{id:2442,name:'Super defence(4)',qty:1}],outputs:[{id:23721,name:'Divine super defence potion(4)',qty:1}],notes:'Average market delta excluding untradeable crystal dust'},
+  {name:'Divine ranging potion',skill:'Herblore',level:74,xp:2,category:'Divine Potions',
+    inputs:[{id:2444,name:'Ranging potion(4)',qty:1}],outputs:[{id:23733,name:'Divine ranging potion(4)',qty:1}],notes:'Average market delta excluding untradeable crystal dust'},
+  {name:'Divine magic potion',skill:'Herblore',level:78,xp:2,category:'Divine Potions',
+    inputs:[{id:3040,name:'Magic potion(4)',qty:1}],outputs:[{id:23745,name:'Divine magic potion(4)',qty:1}],notes:'Average market delta excluding untradeable crystal dust'},
+  {name:'Divine bastion potion',skill:'Herblore',level:86,xp:2,category:'Divine Potions',
+    inputs:[{id:22461,name:'Bastion potion(4)',qty:1}],outputs:[{id:24635,name:'Divine bastion potion(4)',qty:1}],notes:'Average market delta excluding untradeable crystal dust'},
+  {name:'Divine battlemage potion',skill:'Herblore',level:86,xp:2,category:'Divine Potions',
+    inputs:[{id:22449,name:'Battlemage potion(4)',qty:1}],outputs:[{id:24623,name:'Divine battlemage potion(4)',qty:1}],notes:'Average market delta excluding untradeable crystal dust'},
+
+  // Fletching crossbows, shields, and bolt tipping
+  {name:'Wooden stock',skill:'Fletching',level:9,xp:6,category:'Crossbow Stocks',
+    inputs:[{id:1511,name:'Logs',qty:1}],outputs:[{id:9440,name:'Wooden stock',qty:1}]},
+  {name:'Oak stock',skill:'Fletching',level:24,xp:16,category:'Crossbow Stocks',
+    inputs:[{id:1521,name:'Oak logs',qty:1}],outputs:[{id:9442,name:'Oak stock',qty:1}]},
+  {name:'Willow stock',skill:'Fletching',level:39,xp:22,category:'Crossbow Stocks',
+    inputs:[{id:1519,name:'Willow logs',qty:1}],outputs:[{id:9444,name:'Willow stock',qty:1}]},
+  {name:'Maple stock',skill:'Fletching',level:54,xp:32,category:'Crossbow Stocks',
+    inputs:[{id:1517,name:'Maple logs',qty:1}],outputs:[{id:9448,name:'Maple stock',qty:1}]},
+  {name:'Yew stock',skill:'Fletching',level:69,xp:50,category:'Crossbow Stocks',
+    inputs:[{id:1515,name:'Yew logs',qty:1}],outputs:[{id:9452,name:'Yew stock',qty:1}]},
+  {name:'Magic stock',skill:'Fletching',level:78,xp:70,category:'Crossbow Stocks',
+    inputs:[{id:1513,name:'Magic logs',qty:1}],outputs:[{id:21952,name:'Magic stock',qty:1}]},
+  {name:'Bronze crossbow',skill:'Fletching',level:9,xp:12,category:'Crossbows',
+    inputs:[{id:9440,name:'Wooden stock',qty:1},{id:9420,name:'Bronze limbs',qty:1},{id:9438,name:'Crossbow string',qty:1}],outputs:[{id:9174,name:'Bronze crossbow',qty:1}]},
+  {name:'Iron crossbow',skill:'Fletching',level:39,xp:44,category:'Crossbows',
+    inputs:[{id:9442,name:'Oak stock',qty:1},{id:9423,name:'Iron limbs',qty:1},{id:9438,name:'Crossbow string',qty:1}],outputs:[{id:9177,name:'Iron crossbow',qty:1}]},
+  {name:'Steel crossbow',skill:'Fletching',level:46,xp:54,category:'Crossbows',
+    inputs:[{id:9444,name:'Willow stock',qty:1},{id:9425,name:'Steel limbs',qty:1},{id:9438,name:'Crossbow string',qty:1}],outputs:[{id:9179,name:'Steel crossbow',qty:1}]},
+  {name:'Mithril crossbow',skill:'Fletching',level:54,xp:64,category:'Crossbows',
+    inputs:[{id:9448,name:'Maple stock',qty:1},{id:9427,name:'Mithril limbs',qty:1},{id:9438,name:'Crossbow string',qty:1}],outputs:[{id:9181,name:'Mithril crossbow',qty:1}]},
+  {name:'Adamant crossbow',skill:'Fletching',level:61,xp:82,category:'Crossbows',
+    inputs:[{id:9452,name:'Yew stock',qty:1},{id:9429,name:'Adamantite limbs',qty:1},{id:9438,name:'Crossbow string',qty:1}],outputs:[{id:9183,name:'Adamant crossbow',qty:1}]},
+  {name:'Rune crossbow',skill:'Fletching',level:69,xp:100,category:'Crossbows',
+    inputs:[{id:21952,name:'Magic stock',qty:1},{id:9431,name:'Runite limbs',qty:1},{id:9438,name:'Crossbow string',qty:1}],outputs:[{id:9185,name:'Rune crossbow',qty:1}]},
+  {name:'Oak shield',skill:'Fletching',level:27,xp:50,category:'Shields',
+    inputs:[{id:1521,name:'Oak logs',qty:2}],outputs:[{id:22251,name:'Oak shield',qty:1}]},
+  {name:'Willow shield',skill:'Fletching',level:42,xp:83,category:'Shields',
+    inputs:[{id:1519,name:'Willow logs',qty:2}],outputs:[{id:22254,name:'Willow shield',qty:1}]},
+  {name:'Maple shield',skill:'Fletching',level:57,xp:116.5,category:'Shields',
+    inputs:[{id:1517,name:'Maple logs',qty:2}],outputs:[{id:22257,name:'Maple shield',qty:1}]},
+  {name:'Yew shield',skill:'Fletching',level:75,xp:150,category:'Shields',
+    inputs:[{id:1515,name:'Yew logs',qty:2}],outputs:[{id:22260,name:'Yew shield',qty:1}]},
+  {name:'Magic shield',skill:'Fletching',level:87,xp:183,category:'Shields',
+    inputs:[{id:1513,name:'Magic logs',qty:2}],outputs:[{id:22263,name:'Magic shield',qty:1}]},
+  {name:'Redwood shield',skill:'Fletching',level:92,xp:216,category:'Shields',
+    inputs:[{id:19669,name:'Redwood logs',qty:2}],outputs:[{id:22266,name:'Redwood shield',qty:1}]},
+  {name:'Opal bolts (x10)',skill:'Fletching',level:11,xp:16,category:'Bolt Tipping',
+    inputs:[{id:877,name:'Bronze bolts',qty:10},{id:45,name:'Opal bolt tips',qty:10}],outputs:[{id:879,name:'Opal bolts',qty:10}]},
+  {name:'Pearl bolts (x10)',skill:'Fletching',level:41,xp:32,category:'Bolt Tipping',
+    inputs:[{id:877,name:'Bronze bolts',qty:10},{id:46,name:'Pearl bolt tips',qty:10}],outputs:[{id:880,name:'Pearl bolts',qty:10}]},
+  {name:'Ruby bolts (x10)',skill:'Fletching',level:63,xp:63,category:'Bolt Tipping',
+    inputs:[{id:9143,name:'Adamant bolts',qty:10},{id:9191,name:'Ruby bolt tips',qty:10}],outputs:[{id:9339,name:'Ruby bolts',qty:10}]},
+  {name:'Diamond bolts (x10)',skill:'Fletching',level:65,xp:70,category:'Bolt Tipping',
+    inputs:[{id:9143,name:'Adamant bolts',qty:10},{id:9192,name:'Diamond bolt tips',qty:10}],outputs:[{id:9340,name:'Diamond bolts',qty:10}]},
+  {name:'Dragonstone bolts (x10)',skill:'Fletching',level:71,xp:82,category:'Bolt Tipping',
+    inputs:[{id:9144,name:'Runite bolts',qty:10},{id:9193,name:'Dragonstone bolt tips',qty:10}],outputs:[{id:9341,name:'Dragonstone bolts',qty:10}]},
+  {name:'Onyx bolts (x10)',skill:'Fletching',level:73,xp:94,category:'Bolt Tipping',
+    inputs:[{id:9144,name:'Runite bolts',qty:10},{id:9194,name:'Onyx bolt tips',qty:10}],outputs:[{id:9342,name:'Onyx bolts',qty:10}]},
+
+  // More activity methods with average models
+  {name:'Brimhaven Agility Arena ticket',skill:'Agility',level:1,xp:240,category:'Courses',inputs:[],outputs:[],notes:'Average XP per ticket before diary/glove modifiers'},
+  {name:'Dorgesh-Kaan agility course',skill:'Agility',level:80,xp:2375,category:'Courses',inputs:[],outputs:[],notes:'Average lap with item delivery route'},
+  {name:'Shayzien basic agility course',skill:'Agility',level:5,xp:133.2,category:'Courses',inputs:[],outputs:[],notes:'Low-level Kourend course'},
+  {name:'Shayzien advanced agility course',skill:'Agility',level:48,xp:474.3,category:'Courses',inputs:[],outputs:[],notes:'Mid-level Kourend course'},
+  {name:'Stone chests',skill:'Thieving',level:64,xp:280,category:'Chests',inputs:[],outputs:[{id:995,name:'Coins',qty:100},{id:1623,name:'Uncut sapphire',qty:0.08},{id:1621,name:'Uncut emerald',qty:0.05}],notes:'Average loot model in Lizardman Temple'},
+  {name:'Stealing artefacts',skill:'Thieving',level:49,xp:500,category:'Artefacts',inputs:[],outputs:[],notes:'Port Piscarilius route; pure XP method'},
+  {name:'Sorceress\'s Garden summer',skill:'Thieving',level:65,xp:3000,category:'Sorceress Garden',inputs:[],outputs:[],notes:'Average successful summer garden run; sq\'irkjuice is not GE-priced'},
+  {name:'Rogues\' chest',skill:'Thieving',level:84,xp:100,category:'Chests',inputs:[],outputs:[{id:995,name:'Coins',qty:250},{id:560,name:'Death rune',qty:8},{id:565,name:'Blood rune',qty:4}],notes:'Wilderness chest, average common loot model'},
+  {name:'Shooting Stars',skill:'Mining',level:10,xp:32,category:'Distractions',
+    inputs:[],outputs:[],notes:'AFK stardust method; stardust rewards are not GE-priced'},
+  {name:'Calcified rocks',skill:'Mining',level:41,xp:35,category:'Other',
+    inputs:[],outputs:[],notes:'Prayer/mining training in Cam Torum; calcified deposits are not GE-priced'},
+  {name:'Blast Mine average ore',skill:'Mining',level:43,xp:55,category:'Minigames',
+    inputs:[{id:13573,name:'Dynamite',qty:1}],outputs:[{id:447,name:'Mithril ore',qty:0.35},{id:449,name:'Adamantite ore',qty:0.2},{id:451,name:'Runite ore',qty:0.03}],notes:'Average ore model for mid/high Mining levels'},
+  {name:'Ourania/ZMI altar inventory',skill:'Runecraft',level:1,xp:1300,category:'Runes',
+    inputs:[{id:7936,name:'Pure essence',qty:28}],outputs:[{id:556,name:'Air rune',qty:120},{id:561,name:'Nature rune',qty:25},{id:563,name:'Law rune',qty:16},{id:560,name:'Death rune',qty:9},{id:565,name:'Blood rune',qty:3}],notes:'Average mixed-rune inventory model'},
+  {name:'Daeyalt ZMI inventory',skill:'Runecraft',level:50,xp:1950,category:'Runes',
+    inputs:[],outputs:[{id:556,name:'Air rune',qty:120},{id:561,name:'Nature rune',qty:25},{id:563,name:'Law rune',qty:16},{id:560,name:'Death rune',qty:9},{id:565,name:'Blood rune',qty:3}],notes:'Average ZMI inventory using untradeable daeyalt essence'},
+  {name:'Limestone attack stone',skill:'Construction',level:59,xp:200,category:'Furniture',
+    inputs:[{id:3420,name:'Limestone brick',qty:10}],outputs:[],notes:'Dungeon room construction option'},
+  {name:'Bagged plant 1',skill:'Construction',level:1,xp:31,category:'Garden',
+    inputs:[{id:8431,name:'Bagged plant 1',qty:1}],outputs:[]},
+  {name:'Bagged plant 2',skill:'Construction',level:6,xp:70,category:'Garden',
+    inputs:[{id:8433,name:'Bagged plant 2',qty:1}],outputs:[]},
+  {name:'Bagged plant 3',skill:'Construction',level:12,xp:100,category:'Garden',
+    inputs:[{id:8435,name:'Bagged plant 3',qty:1}],outputs:[]},
+
+  // ==== CODEX BROAD WIKI PASS: NON-FLETCHING METHODS ====
+  // Cooking pies, boosted foods, and ingredient routes
+  {name:'Redberry pie',skill:'Cooking',level:10,xp:78,category:'Pies',
+    inputs:[{id:2321,name:'Uncooked berry pie',qty:1}],outputs:[{id:2325,name:'Redberry pie',qty:1}]},
+  {name:'Meat pie',skill:'Cooking',level:20,xp:110,category:'Pies',
+    inputs:[{id:2319,name:'Uncooked meat pie',qty:1}],outputs:[{id:2327,name:'Meat pie',qty:1}]},
+  {name:'Mud pie',skill:'Cooking',level:29,xp:128,category:'Pies',
+    inputs:[{id:7168,name:'Raw mud pie',qty:1}],outputs:[{id:7170,name:'Mud pie',qty:1}]},
+  {name:'Apple pie',skill:'Cooking',level:30,xp:130,category:'Pies',
+    inputs:[{id:2317,name:'Uncooked apple pie',qty:1}],outputs:[{id:2323,name:'Apple pie',qty:1}]},
+  {name:'Garden pie',skill:'Cooking',level:34,xp:138,category:'Pies',
+    inputs:[{id:7176,name:'Raw garden pie',qty:1}],outputs:[{id:7178,name:'Garden pie',qty:1}]},
+  {name:'Fish pie',skill:'Cooking',level:47,xp:164,category:'Pies',
+    inputs:[{id:7186,name:'Raw fish pie',qty:1}],outputs:[{id:7188,name:'Fish pie',qty:1}]},
+  {name:'Botanical pie',skill:'Cooking',level:52,xp:180,category:'Pies',
+    inputs:[{id:2315,name:'Pie shell',qty:1},{id:19653,name:'Golovanova fruit top',qty:1}],outputs:[{id:19662,name:'Botanical pie',qty:1}],notes:'Ingredient model; assumes assemble then cook'},
+  {name:'Mushroom pie',skill:'Cooking',level:60,xp:200,category:'Pies',
+    inputs:[{id:2315,name:'Pie shell',qty:1},{id:21626,name:'Sulliuscep cap',qty:1}],outputs:[{id:21690,name:'Mushroom pie',qty:1}],notes:'Ingredient model; assumes assemble then cook'},
+  {name:'Dragonfruit pie',skill:'Cooking',level:73,xp:220,category:'Pies',
+    inputs:[{id:2315,name:'Pie shell',qty:1},{id:22929,name:'Dragonfruit',qty:1}],outputs:[{id:22795,name:'Dragonfruit pie',qty:1}],notes:'Ingredient model; assumes assemble then cook'},
+  {name:'Chocolate cake topping',skill:'Cooking',level:50,xp:30,category:'Other',
+    inputs:[{id:1891,name:'Cake',qty:1},{id:1973,name:'Chocolate bar',qty:1}],outputs:[{id:1897,name:'Chocolate cake',qty:1}],notes:'Adding chocolate to an already baked cake'},
+  {name:'Wine of zamorak',skill:'Cooking',level:65,xp:200,category:'Other',
+    inputs:[{id:1937,name:'Jug of water',qty:1},{id:20749,name:"Zamorak's grapes",qty:1}],outputs:[{id:245,name:'Wine of zamorak',qty:1}]},
+
+  // Crafting pottery, zenyte jewellery, and leather shields
+  {name:'Pottery pot',skill:'Crafting',level:1,xp:12.6,category:'Pottery',
+    inputs:[{id:1761,name:'Soft clay',qty:1}],outputs:[{id:1931,name:'Pot',qty:1}],notes:'Includes shaping and firing'},
+  {name:'Pottery pie dish',skill:'Crafting',level:7,xp:25,category:'Pottery',
+    inputs:[{id:1761,name:'Soft clay',qty:1}],outputs:[{id:2313,name:'Pie dish',qty:1}],notes:'Includes shaping and firing'},
+  {name:'Pottery bowl',skill:'Crafting',level:8,xp:33,category:'Pottery',
+    inputs:[{id:1761,name:'Soft clay',qty:1}],outputs:[{id:1923,name:'Bowl',qty:1}],notes:'Includes shaping and firing'},
+  {name:'Pottery plant pot',skill:'Crafting',level:19,xp:37.5,category:'Pottery',
+    inputs:[{id:1761,name:'Soft clay',qty:1}],outputs:[{id:5350,name:'Empty plant pot',qty:1}],notes:'Includes shaping and firing'},
+  {name:'Zenyte ring',skill:'Crafting',level:89,xp:150,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:19493,name:'Zenyte',qty:1}],outputs:[{id:19538,name:'Zenyte ring',qty:1}]},
+  {name:'Zenyte necklace',skill:'Crafting',level:92,xp:165,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:19493,name:'Zenyte',qty:1}],outputs:[{id:19535,name:'Zenyte necklace',qty:1}]},
+  {name:'Zenyte bracelet',skill:'Crafting',level:95,xp:180,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:19493,name:'Zenyte',qty:1}],outputs:[{id:19532,name:'Zenyte bracelet',qty:1}]},
+  {name:'Zenyte amulet (u)',skill:'Crafting',level:98,xp:200,category:'Jewellery',
+    inputs:[{id:2357,name:'Gold bar',qty:1},{id:19493,name:'Zenyte',qty:1}],outputs:[{id:19501,name:'Zenyte amulet (u)',qty:1}]},
+  {name:"Green d'hide shield",skill:'Crafting',level:62,xp:124,category:'Dragonhide Shields',
+    inputs:[{id:1745,name:'Green dragon leather',qty:2},{id:22257,name:'Maple shield',qty:1},{id:1539,name:'Steel nails',qty:15}],outputs:[{id:22275,name:"Green d'hide shield",qty:1}]},
+  {name:"Blue d'hide shield",skill:'Crafting',level:69,xp:140,category:'Dragonhide Shields',
+    inputs:[{id:2505,name:'Blue dragon leather',qty:2},{id:22260,name:'Yew shield',qty:1},{id:4822,name:'Mithril nails',qty:15}],outputs:[{id:22278,name:"Blue d'hide shield",qty:1}]},
+  {name:"Red d'hide shield",skill:'Crafting',level:76,xp:156,category:'Dragonhide Shields',
+    inputs:[{id:2507,name:'Red dragon leather',qty:2},{id:22263,name:'Magic shield',qty:1},{id:4823,name:'Adamantite nails',qty:15}],outputs:[{id:22281,name:"Red d'hide shield",qty:1}]},
+  {name:"Black d'hide shield",skill:'Crafting',level:83,xp:172,category:'Dragonhide Shields',
+    inputs:[{id:2509,name:'Black dragon leather',qty:2},{id:22266,name:'Redwood shield',qty:1},{id:4824,name:'Rune nails',qty:15}],outputs:[{id:22284,name:"Black d'hide shield",qty:1}]},
+
+  // Smithing ammo bases and Giants' Foundry alloys
+  {name:'Bronze bolts (unf) (x10)',skill:'Smithing',level:3,xp:12.5,category:'Unfinished Bolts',
+    inputs:[{id:2349,name:'Bronze bar',qty:1}],outputs:[{id:9375,name:'Bronze bolts (unf)',qty:10}]},
+  {name:'Iron bolts (unf) (x10)',skill:'Smithing',level:18,xp:25,category:'Unfinished Bolts',
+    inputs:[{id:2351,name:'Iron bar',qty:1}],outputs:[{id:9377,name:'Iron bolts (unf)',qty:10}]},
+  {name:'Steel bolts (unf) (x10)',skill:'Smithing',level:33,xp:37.5,category:'Unfinished Bolts',
+    inputs:[{id:2353,name:'Steel bar',qty:1}],outputs:[{id:9378,name:'Steel bolts (unf)',qty:10}]},
+  {name:'Mithril bolts (unf) (x10)',skill:'Smithing',level:53,xp:50,category:'Unfinished Bolts',
+    inputs:[{id:2359,name:'Mithril bar',qty:1}],outputs:[{id:9379,name:'Mithril bolts (unf)',qty:10}]},
+  {name:'Adamant bolts (unf) (x10)',skill:'Smithing',level:73,xp:62.5,category:'Unfinished Bolts',
+    inputs:[{id:2361,name:'Adamantite bar',qty:1}],outputs:[{id:9380,name:'Adamant bolts(unf)',qty:10}]},
+  {name:'Runite bolts (unf) (x10)',skill:'Smithing',level:88,xp:75,category:'Unfinished Bolts',
+    inputs:[{id:2363,name:'Runite bar',qty:1}],outputs:[{id:9381,name:'Runite bolts (unf)',qty:10}]},
+  {name:"Giants' Foundry mithril/adamant sword",skill:'Smithing',level:70,xp:16570,category:'Giants Foundry',
+    inputs:[{id:2359,name:'Mithril bar',qty:14},{id:2361,name:'Adamantite bar',qty:14}],outputs:[{id:995,name:'Coins',qty:25000}],notes:'Average 14/14 alloy sword with moulds; exact score varies'},
+  {name:"Giants' Foundry adamant/rune sword",skill:'Smithing',level:85,xp:23053,category:'Giants Foundry',
+    inputs:[{id:2361,name:'Adamantite bar',qty:14},{id:2363,name:'Runite bar',qty:14}],outputs:[{id:995,name:'Coins',qty:35000}],notes:'Average 14/14 alloy sword with moulds; exact score varies'},
+
+  // Construction furniture with priced material costs
+  {name:'Oak dining table',skill:'Construction',level:22,xp:240,category:'Furniture',
+    inputs:[{id:8778,name:'Oak plank',qty:4}],outputs:[]},
+  {name:'Teak larder',skill:'Construction',level:43,xp:750,category:'Furniture',
+    inputs:[{id:8780,name:'Teak plank',qty:8},{id:8790,name:'Bolt of cloth',qty:2}],outputs:[]},
+  {name:'Mahogany bookcase',skill:'Construction',level:40,xp:420,category:'Furniture',
+    inputs:[{id:8782,name:'Mahogany plank',qty:3}],outputs:[]},
+  {name:'Teak magic wardrobe',skill:'Construction',level:60,xp:360,category:'Costume Room',
+    inputs:[{id:8780,name:'Teak plank',qty:4}],outputs:[],notes:'Upgrade materials only'},
+  {name:'Mahogany magic wardrobe',skill:'Construction',level:78,xp:560,category:'Costume Room',
+    inputs:[{id:8782,name:'Mahogany plank',qty:4}],outputs:[],notes:'Upgrade materials only'},
+  {name:'Marble magic wardrobe',skill:'Construction',level:96,xp:500,category:'Costume Room',
+    inputs:[{id:8786,name:'Marble block',qty:1}],outputs:[],notes:'Upgrade materials only'},
+  {name:'Gilded bench',skill:'Construction',level:61,xp:1760,category:'Furniture',
+    inputs:[{id:8782,name:'Mahogany plank',qty:4},{id:8784,name:'Gold leaf',qty:4}],outputs:[]},
+  {name:'Opulent rug',skill:'Construction',level:65,xp:360,category:'Furniture',
+    inputs:[{id:8790,name:'Bolt of cloth',qty:4},{id:8784,name:'Gold leaf',qty:1}],outputs:[]},
+  {name:'Marble lectern',skill:'Construction',level:77,xp:1800,category:'Furniture',
+    inputs:[{id:8786,name:'Marble block',qty:1},{id:8788,name:'Magic stone',qty:1},{id:8784,name:'Gold leaf',qty:1}],outputs:[]},
+
+  // Sailing is now live in OSRS; most methods are activity XP, not GE item routes
+  {name:'Pandemonium quest',skill:'Sailing',level:1,xp:300,category:'Quests',
+    inputs:[],outputs:[],notes:'Starter quest reward'},
+  {name:'Early courier tasks',skill:'Sailing',level:1,xp:600,category:'Courier Tasks',
+    inputs:[],outputs:[],notes:'Average early Port Sarim/Pandemonium delivery'},
+  {name:'Sea charting task',skill:'Sailing',level:22,xp:1000,category:'Sea Charting',
+    inputs:[],outputs:[],notes:'Average charting task; Wiki guide reports about 10k XP/hr early'},
+  {name:'Tempor Tantrum trial',skill:'Sailing',level:30,xp:1103,category:'Barracuda Trials',
+    inputs:[],outputs:[],notes:'Average shark-rank trial XP from Wiki formula'},
+  {name:'Summer Shore courier task',skill:'Sailing',level:46,xp:4000,category:'Courier Tasks',
+    inputs:[],outputs:[],notes:'Average level 46-55 delivery, roughly 3k-5k XP'},
+  {name:'Jubbly Jive trial',skill:'Sailing',level:55,xp:4270,category:'Barracuda Trials',
+    inputs:[],outputs:[],notes:'Average shark-rank trial XP from Wiki formula'},
+  {name:'Rellekka courier task',skill:'Sailing',level:62,xp:6000,category:'Courier Tasks',
+    inputs:[],outputs:[],notes:'Average level 62+ courier route; task reward varies'},
+  {name:'Gwenith Glide trial',skill:'Sailing',level:72,xp:9315,category:'Barracuda Trials',
+    inputs:[],outputs:[],notes:'Average high-rank trial XP before crystal extractor'},
+  {name:'Lunar Isle courier task',skill:'Sailing',level:76,xp:11519,category:'Courier Tasks',
+    inputs:[],outputs:[],notes:'Aldarin to Lunar Isle route from Wiki training guide'},
+  {name:'Shipwreck salvaging',skill:'Sailing',level:15,xp:80,category:'Shipwreck Salvaging',
+    inputs:[],outputs:[],notes:'Low-intensity salvage action; XP/action depends on wreck and hook tier'}
+];
+
+// ── State ──
+let prices = {};
+let priceMap = {};  // id -> {high, low, avg}
+let playerData = null;
+let selectedSkill = null;
+let pricesLoaded = false;
+const PRICE_API_URL = 'https://prices.runescape.wiki/api/v1/osrs/latest';
+const MATERIAL_COST_MULTIPLIER = 1.05;
+
+// ── API: Fetch Prices ──
+async function fetchPrices(){
+  const statusEl = document.getElementById('price-status');
+  statusEl.textContent = 'Fetching live prices from the RuneLite/Wiki API...';
+  try {
+    const res = await fetch(PRICE_API_URL,{
+      headers:{'User-Agent':'OSRS-Skill-Calculator-WebApp'}
+    });
+    if(!res.ok) throw new Error('Price API returned '+res.status);
+    const json = await res.json();
+    prices = json.data;
+    for(const [id,p] of Object.entries(prices)){
+      const high = p.high || 0;
+      const low = p.low || 0;
+      const avg = high && low ? Math.round((high+low)/2) : (high||low);
+      priceMap[id] = {high,low,avg};
+    }
+    pricesLoaded = true;
+    const now = new Date();
+    statusEl.innerHTML = `RuneLite/Wiki prices loaded (${Object.keys(prices).length.toLocaleString()} items) &mdash; material costs include a 5% buy buffer &mdash; ${now.toLocaleTimeString()} <button class="refresh-btn" onclick="fetchPrices()">Refresh</button>`;
+    if(selectedSkill) renderMethods(selectedSkill);
+  } catch(e){
+    statusEl.textContent = 'Failed to load prices: '+e.message+'. Costs will show as N/A.';
+    console.error('Price fetch error:',e);
+  }
+}
+
+function getPrice(id){
+  if(id===995) return 1; // Coins are not listed in the Wiki GE mapping.
+  if(!priceMap[id]) return null;
+  return priceMap[id].avg;
+}
+
+// ── API: Fetch Player ──
+async function fetchPlayer(username){
+  const errEl = document.getElementById('error-msg');
+  const loadEl = document.getElementById('loading');
+  errEl.classList.add('hidden');
+  loadEl.classList.remove('hidden');
+  try {
+    return await fetchPlayerHiscores(username);
+  } catch(e){
+    try {
+      // Fallback to Wise Old Man for CORS-friendly cached lookups if official hiscores are unavailable.
+      let res = await fetch(`https://api.wiseoldman.net/v2/players/${encodeURIComponent(username)}`);
+    if(res.status===404){
+      // Try to track the player
+      const trackRes = await fetch('https://api.wiseoldman.net/v2/players',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({username})
+      });
+      if(trackRes.ok){
+        const tracked = await trackRes.json();
+        loadEl.classList.add('hidden');
+        return parseWomPlayer(tracked);
+      }
+      throw new Error('Player not found');
+    }
+    if(!res.ok) throw new Error('WOM API error: '+res.status);
+    const data = await res.json();
+    loadEl.classList.add('hidden');
+    return parseWomPlayer(data);
+    } catch(e2){
+      loadEl.classList.add('hidden');
+      errEl.textContent = `Could not find player "${username}". Check spelling or try again later.`;
+      errEl.classList.remove('hidden');
+      return null;
+    }
+  }
+}
+
+async function fetchPlayerHiscores(username){
+  const loadEl = document.getElementById('loading');
+  const errEl = document.getElementById('error-msg');
+  const targetUrl = 'https://secure.runescape.com/m=hiscore_oldschool/index_lite.json?player=' + encodeURIComponent(username);
+  const proxyUrls = [
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`
+  ];
+  let text = '';
+  let lastError = null;
+  for(const proxyUrl of proxyUrls){
+    try{
+      const res = await fetch(proxyUrl);
+      text = await res.text();
+      if(!res.ok) throw new Error('Hiscores proxy error '+res.status);
+      if(/server-side requests are not allowed|internal server error/i.test(text)){
+        throw new Error('Hiscores proxy rejected request');
+      }
+      break;
+    } catch(e){
+      lastError = e;
+      text = '';
+    }
+  }
+  if(!text) throw lastError || new Error('Hiscores error');
+  loadEl.classList.add('hidden');
+  try {
+    const json = JSON.parse(text);
+    return parseHiscoresJson(json, username);
+  } catch(e){
+    return parseHiscoresText(text, username);
+  }
+}
+
+function normalizeHiscoreSkillName(name){
+  if(!name) return null;
+  const cleaned = String(name).trim().toLowerCase().replace(/\s+/g,' ');
+  const aliases = {
+    overall:'Overall',
+    attack:'Attack',
+    defence:'Defence',
+    strength:'Strength',
+    hitpoints:'Hitpoints',
+    ranged:'Ranged',
+    prayer:'Prayer',
+    magic:'Magic',
+    cooking:'Cooking',
+    woodcutting:'Woodcutting',
+    fletching:'Fletching',
+    fishing:'Fishing',
+    firemaking:'Firemaking',
+    crafting:'Crafting',
+    smithing:'Smithing',
+    mining:'Mining',
+    herblore:'Herblore',
+    agility:'Agility',
+    thieving:'Thieving',
+    slayer:'Slayer',
+    farming:'Farming',
+    runecraft:'Runecraft',
+    runecrafting:'Runecraft',
+    hunter:'Hunter',
+    construction:'Construction',
+    sailing:'Sailing'
+  };
+  return aliases[cleaned] || null;
+}
+
+function parseWomPlayer(data){
+  const snap = data.latestSnapshot?.data?.skills || data.data?.skills;
+  if(!snap) return null;
+  const skills = {};
+  for(const s of SKILLS){
+    if(s==='Overall') continue;
+    const key = WOM_SKILL_KEYS[s] || s.toLowerCase();
+    if(snap[key]){
+      skills[s] = {level:snap[key].level||1, xp:snap[key].experience||0, rank:snap[key].rank||-1};
+    } else {
+      skills[s] = {level:1, xp:0, rank:-1};
+    }
+  }
+  const overall = snap.overall || {};
+  return {
+    username: data.displayName || data.username,
+    skills,
+    totalLevel: overall.level || Object.values(skills).reduce((a,s)=>a+s.level,0),
+    totalXp: overall.experience || 0,
+    combatLevel: data.combatLevel || calcCombat(skills),
+    questPoints: null
+  };
+}
+
+function parseHiscoresJson(json, username){
+  const skills = {};
+  if(json.skills) {
+    for(let i=0;i<json.skills.length&&i<HISCORE_SKILLS.length;i++){
+      const s = json.skills[i];
+      const skillName = normalizeHiscoreSkillName(s.name) || HISCORE_SKILLS[s.id] || HISCORE_SKILLS[i];
+      if(skillName==='Overall') continue;
+      skills[skillName] = {level:s.level||1,xp:s.xp||0,rank:s.rank||-1};
+    }
+  }
+  for(const skill of SKILLS) skills[skill] ||= {level:1,xp:0,rank:-1};
+  return {
+    username,
+    skills,
+    totalLevel: json.skills?.[0]?.level||Object.values(skills).reduce((a,s)=>a+s.level,0),
+    totalXp: json.skills?.[0]?.xp||0,
+    combatLevel: calcCombat(skills),
+    questPoints: null
+  };
+}
+
+function parseHiscoresText(text, username){
+  const lines = text.trim().split('\n');
+  const skills = {};
+  for(let i=1;i<HISCORE_SKILLS.length&&i<lines.length;i++){
+    const parts = lines[i].split(',');
+    skills[HISCORE_SKILLS[i]] = {rank:+parts[0]||-1,level:+parts[1]||1,xp:+parts[2]||0};
+  }
+  for(const skill of SKILLS) skills[skill] ||= {level:1,xp:0,rank:-1};
+  const overallParts = lines[0]?.split(',') || [];
+  return {
+    username,
+    skills,
+    totalLevel: +overallParts[1]||0,
+    totalXp: +overallParts[2]||0,
+    combatLevel: calcCombat(skills),
+    questPoints: null
+  };
+}
+
+function calcCombat(skills){
+  const g = s => skills[s]?.level||1;
+  const base = 0.25*(g('Defence')+g('Hitpoints')+Math.floor(g('Prayer')/2));
+  const melee = 0.325*(g('Attack')+g('Strength'));
+  const range = 0.325*(Math.floor(g('Ranged')*3/2));
+  const mage = 0.325*(Math.floor(g('Magic')*3/2));
+  return Math.floor(base+Math.max(melee,range,mage));
+}
+
+// ── Calculations ──
+function calcMethodCost(method){
+  let inputCost = 0, outputValue = 0;
+  let hasUnknown = false;
+  for(const inp of method.inputs){
+    const p = getPrice(inp.id);
+    if(p===null){hasUnknown=true;continue;}
+    inputCost += p * inp.qty * MATERIAL_COST_MULTIPLIER;
+  }
+  for(const out of method.outputs){
+    const p = getPrice(out.id);
+    if(p===null){hasUnknown=true;continue;}
+    outputValue += p * out.qty;
+  }
+  const netCost = inputCost - outputValue;
+  const gpPerXp = method.xp > 0 ? netCost / method.xp : 0;
+  const note = (method.notes || '').toLowerCase();
+  const noMarketItems = method.inputs.length === 0 && method.outputs.length === 0;
+  const variableCost = method.variableCost || (noMarketItems && /varies|variable|scales|reward|loot|drops|output|points|contract|team|minigame|not tradeable|untradeable/.test(note));
+  return {inputCost, outputValue, netCost, gpPerXp, hasUnknown, variableCost, noMarketItems};
+}
+
+// ── UI: Render Player Stats ──
+function renderPlayerStats(player){
+  const section = document.getElementById('player-section');
+  const noPlayer = document.getElementById('no-player');
+  section.classList.remove('hidden');
+  noPlayer.classList.add('hidden');
+
+  document.getElementById('player-name').textContent = player.username;
+  document.getElementById('combat-level').textContent = 'Combat: ' + player.combatLevel;
+  document.getElementById('quest-points').textContent = player.questPoints ? 'QP: '+player.questPoints : 'Total: '+player.totalLevel;
+
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = '';
+  for(const skill of SKILLS){
+    if(skill==='Overall') continue;
+    const s = player.skills[skill] || {level:1,xp:0};
+    const card = document.createElement('div');
+    card.className = 'skill-card' + (skill===selectedSkill?' active':'');
+    card.onclick = () => selectSkill(skill);
+    card.innerHTML = `
+      <img class="skill-icon" src="${SKILL_ICON(skill)}" alt="${skill}" onerror="this.style.display='none'">
+      <div class="skill-info">
+        <div class="skill-name">${skill}</div>
+        <div class="skill-level">${s.level}</div>
+        <div class="skill-xp">${s.xp.toLocaleString()} XP</div>
+      </div>`;
+    grid.appendChild(card);
+  }
+}
+
+// ── UI: Skill Tabs (no player) ──
+function renderSkillTabs(){
+  const tabsEl = document.getElementById('skill-tabs');
+  tabsEl.innerHTML = '';
+  const skillsWithMethods = [...new Set(METHODS.map(m=>m.skill))];
+  for(const skill of SKILLS){
+    if(!skillsWithMethods.includes(skill) && !['Overall','Attack','Strength','Defence','Hitpoints','Ranged','Sailing'].includes(skill)) continue;
+    const tab = document.createElement('div');
+    tab.className = 'skill-tab'+(skill===selectedSkill?' active':'');
+    tab.onclick = () => selectSkill(skill);
+    tab.innerHTML = `<img src="${SKILL_ICON(skill)}" alt="" onerror="this.style.display='none'"><span>${skill}</span>`;
+    tabsEl.appendChild(tab);
+  }
+}
+
+// ── UI: Select Skill & Render Methods ──
+function selectSkill(skill){
+  selectedSkill = skill;
+  // Update active states
+  document.querySelectorAll('.skill-card,.skill-tab').forEach(el=>{
+    el.classList.toggle('active',el.textContent.includes(skill));
+  });
+  renderMethods(skill);
+}
+
+function renderMethods(skill){
+  const section = document.getElementById('methods-section');
+  if(skill === 'Overall'){
+    renderOverallMethods();
+    return;
+  }
+  const methods = METHODS.filter(m=>m.skill===skill);
+  if(methods.length===0){
+    section.classList.remove('hidden');
+    document.getElementById('skill-title').textContent = skill + ' Training Methods';
+    document.getElementById('xp-info').innerHTML = '<span>No item-based training methods in database for this skill.</span>';
+    document.getElementById('methods-container').innerHTML = '';
+    return;
+  }
+  section.classList.remove('hidden');
+  document.getElementById('skill-title').textContent = skill + ' Training Methods';
+
+  // XP Info
+  const xpInfoEl = document.getElementById('xp-info');
+  const playerSkill = playerData?.skills[skill];
+  const targetLvl = Math.min(99, Math.max(2, parseInt(document.getElementById('target-level').value)||99));
+  if(playerSkill){
+    const currentXp = playerSkill.xp;
+    const targetXp = xpForLevel(targetLvl);
+    const remaining = Math.max(0, targetXp - currentXp);
+    xpInfoEl.innerHTML = `
+      <div><span>Level:</span> <strong>${playerSkill.level}</strong></div>
+      <div><span>Current XP:</span> <strong>${currentXp.toLocaleString()}</strong></div>
+      <div><span>XP to ${targetLvl}:</span> <strong>${remaining.toLocaleString()}</strong></div>
+      <div><span>Target XP:</span> <strong>${targetXp.toLocaleString()}</strong></div>`;
+  } else {
+    xpInfoEl.innerHTML = '<span>Look up a player to see personalized XP calculations</span>';
+  }
+
+  // Filter & sort
+  const filterLevel = document.getElementById('filter-level').checked;
+  const sortBy = document.getElementById('sort-by').value;
+  let filtered = methods.map(m=>{
+    const calc = calcMethodCost(m);
+    return {...m,...calc};
+  });
+  if(filterLevel && playerSkill){
+    filtered = filtered.filter(m=>m.level<=playerSkill.level);
+  }
+
+  switch(sortBy){
+    case 'gpxp': filtered.sort((a,b)=>(a.variableCost||a.hasUnknown)-(b.variableCost||b.hasUnknown) || a.gpPerXp-b.gpPerXp); break;
+    case 'xp': filtered.sort((a,b)=>b.xp-a.xp); break;
+    case 'cost': filtered.sort((a,b)=>(a.variableCost||a.hasUnknown)-(b.variableCost||b.hasUnknown) || a.netCost-b.netCost); break;
+    default: filtered.sort((a,b)=>a.level-b.level);
+  }
+
+  // Group by category if sorted by level
+  const container = document.getElementById('methods-container');
+  container.innerHTML = '';
+
+  if(sortBy==='level'){
+    const categories = [];
+    const catMap = new Map();
+    for(const m of filtered){
+      if(!catMap.has(m.category)){
+        catMap.set(m.category,[]);
+        categories.push(m.category);
+      }
+      catMap.get(m.category).push(m);
+    }
+    for(const cat of categories){
+      const header = document.createElement('div');
+      header.className = 'category-header';
+      header.textContent = cat;
+      container.appendChild(header);
+      container.appendChild(buildMethodsTable(catMap.get(cat), playerSkill, targetLvl));
+    }
+  } else {
+    container.appendChild(buildMethodsTable(filtered, playerSkill, targetLvl));
+  }
+}
+
+function renderOverallMethods(){
+  const section = document.getElementById('methods-section');
+  section.classList.remove('hidden');
+  document.getElementById('skill-title').textContent = 'Overall Top 40 Net GP/Action';
+  document.getElementById('xp-info').innerHTML = '<span>Best current profit per action across all methods using live RuneLite/Wiki prices. Material costs include the 5% buy buffer.</span>';
+
+  const filterLevel = document.getElementById('filter-level').checked;
+  const container = document.getElementById('methods-container');
+  container.innerHTML = '';
+
+  let ranked = METHODS.map(m=>{
+    const calc = calcMethodCost(m);
+    return {...m,...calc};
+  }).filter(m=>!m.hasUnknown && !m.noMarketItems && m.netCost < 0);
+
+  if(filterLevel && playerData?.skills){
+    ranked = ranked.filter(m => (playerData.skills[m.skill]?.level || 1) >= m.level);
+  }
+
+  ranked.sort((a,b)=>a.netCost-b.netCost);
+  container.appendChild(buildMethodsTable(ranked.slice(0,40), null, 99, {showSkill:true}));
+}
+
+function buildMethodsTable(methods, playerSkill, targetLvl, options={}){
+  const table = document.createElement('table');
+  table.className = 'methods-table';
+  table.innerHTML = `<colgroup>
+    <col class="col-method"><col class="col-level"><col class="col-xp">
+    <col class="col-cost"><col class="col-gpxp"><col class="col-net"><col class="col-actions">
+  </colgroup><thead><tr>
+    <th>Method</th><th>Lvl</th><th>XP/Action</th>
+    <th>Cost/Action</th><th>GP/XP</th><th>Net GP/Action</th><th>Actions to ${targetLvl}</th>
+  </tr></thead>`;
+  const tbody = document.createElement('tbody');
+
+  for(const m of methods){
+    const tr = document.createElement('tr');
+    const locked = playerSkill && m.level > playerSkill.level;
+    if(locked) tr.className = 'locked';
+
+    const costStr = m.hasUnknown ? 'N/A' : (m.noMarketItems ? 'Free' : formatGp(m.netCost));
+    const costClass = m.hasUnknown || m.noMarketItems ? 'neutral' : (m.netCost > 0 ? 'negative' : (m.netCost < 0 ? 'positive' : 'neutral'));
+    const gpxpStr = m.hasUnknown ? 'N/A' : (m.noMarketItems ? 'Free' : formatGpXp(m.gpPerXp));
+    const gpxpClass = m.hasUnknown || m.noMarketItems ? 'neutral' : (m.gpPerXp > 0 ? 'negative' : (m.gpPerXp < 0 ? 'positive' : 'neutral'));
+    const netGp = -m.netCost;
+    const netStr = m.hasUnknown ? 'N/A' : (m.noMarketItems ? 'Free' : formatNetGp(netGp));
+    const netClass = m.hasUnknown || m.noMarketItems ? 'neutral' : (netGp > 0 ? 'positive' : (netGp < 0 ? 'negative' : 'neutral'));
+
+    let actionsStr = '-';
+    let totalCostStr = '';
+    const xpStr = m.xp > 0 ? m.xp.toLocaleString() : (['Weapons','Armour','Bows','Crossbows','Arrows','Bolts'].includes(m.category) ? 'Gear' : 'Avg');
+    if(m.xp > 0){
+      const currentXp = playerSkill ? playerSkill.xp : 0;
+      const remaining = Math.max(0, xpForLevel(targetLvl) - currentXp);
+      const actions = Math.ceil(remaining / m.xp);
+      actionsStr = actions.toLocaleString();
+      if(!m.hasUnknown && !m.noMarketItems && m.netCost !== 0){
+        const totalCost = actions * m.netCost;
+        totalCostStr = ` (${formatGp(totalCost)})`;
+      }
+    }
+
+    // Materials string
+    const matParts = [];
+    for(const inp of m.inputs){
+      const p = getPrice(inp.id);
+      const pStr = p!==null ? ` @${formatGp(p * MATERIAL_COST_MULTIPLIER)}` : '';
+      matParts.push(`${inp.qty > 1 ? inp.qty+'× ':''}${inp.name}${pStr}`);
+    }
+    for(const out of m.outputs){
+      const p = getPrice(out.id);
+      const pStr = p!==null ? ` @${formatGp(p)}` : '';
+      matParts.push(`→ ${out.qty > 1 ? out.qty+'× ':''}${out.name}${pStr}`);
+    }
+    const matStr = matParts.length > 0 ? matParts.join(' + ') : (m.noMarketItems ? 'No direct item cost' : (m.notes||'No items'));
+    const displayName = options.showSkill ? `${m.name} <span class="skill-chip">${m.skill}</span>` : m.name;
+
+    tr.innerHTML = `
+      <td><div class="method-name">${displayName}</div><div class="materials">${matStr}${m.notes&&matParts.length?' | '+m.notes:''}</div></td>
+      <td class="num">${m.level}</td>
+      <td class="num">${xpStr}</td>
+      <td class="num ${costClass}">${costStr}</td>
+      <td class="num ${gpxpClass}">${gpxpStr}</td>
+      <td class="num ${netClass}">${netStr}</td>
+      <td class="num">${actionsStr}<span style="font-size:.7rem;color:var(--muted)">${totalCostStr}</span></td>`;
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  return table;
+}
+
+// ── Formatters ──
+function formatGp(gp){
+  if(gp===0) return '0';
+  const sign = gp > 0 ? '' : '+';  // positive cost = spending = bad, negative = earning = good
+  const abs = Math.abs(gp);
+  if(abs>=1e6) return sign + (abs/1e6).toFixed(1)+'M';
+  if(abs>=1e3) return sign + (abs/1e3).toFixed(1)+'K';
+  return sign + Math.round(abs).toLocaleString();
+}
+
+function formatNetGp(gp){
+  if(gp===0) return '0';
+  const sign = gp > 0 ? '+' : '-';
+  const abs = Math.abs(gp);
+  if(abs>=1e6) return sign + (abs/1e6).toFixed(1)+'M';
+  if(abs>=1e3) return sign + (abs/1e3).toFixed(1)+'K';
+  return sign + Math.round(abs).toLocaleString();
+}
+
+function formatGpXp(gpxp){
+  if(gpxp===0) return '0';
+  const val = gpxp.toFixed(2);
+  return (gpxp > 0 ? '' : '+') + Math.abs(gpxp).toFixed(2) + ' gp/xp';
+}
+
+// ── Event Handlers ──
+document.getElementById('lookup-btn').addEventListener('click', async()=>{
+  const username = document.getElementById('username-input').value.trim();
+  if(!username) return;
+  playerData = await fetchPlayer(username);
+  if(playerData){
+    renderPlayerStats(playerData);
+    if(selectedSkill) renderMethods(selectedSkill);
+  }
+});
+
+document.getElementById('username-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('lookup-btn').click();
+});
+
+document.getElementById('filter-level').addEventListener('change',()=>{
+  if(selectedSkill) renderMethods(selectedSkill);
+});
+document.getElementById('sort-by').addEventListener('change',()=>{
+  if(selectedSkill) renderMethods(selectedSkill);
+});
+document.getElementById('target-level').addEventListener('change',()=>{
+  if(selectedSkill) renderMethods(selectedSkill);
+});
+
+// ── Init ──
+renderSkillTabs();
+fetchPrices();
+</script>
+</body>
+</html>
