@@ -77,13 +77,17 @@ header h1{margin-bottom:1rem}
 
 /* Methods Table */
 .methods-table{width:100%;border-collapse:collapse;font-size:.85rem;table-layout:fixed}
-.methods-table col.col-method{width:36%}
-.methods-table col.col-level{width:7%}
-.methods-table col.col-xp{width:11%}
-.methods-table col.col-cost{width:13%}
-.methods-table col.col-gpxp{width:12%}
-.methods-table col.col-net{width:12%}
-.methods-table col.col-actions{width:9%}
+.methods-table col.col-method{width:20%}
+.methods-table col.col-level{width:4%}
+.methods-table col.col-xp{width:7%}
+.methods-table col.col-cost{width:9%}
+.methods-table col.col-gpxp{width:8%}
+.methods-table col.col-net{width:8%}
+.methods-table col.col-xphr{width:8%}
+.methods-table col.col-actions{width:7%}
+.methods-table col.col-time{width:8%}
+.methods-table col.col-totalcost{width:9%}
+.methods-table col.col-gphr{width:10%}
 .methods-table th{text-align:center;color:var(--parchment);font-weight:700;padding:.55rem .45rem;border-bottom:2px ridge var(--panel-border);position:sticky;top:0;background:#1b130c;cursor:pointer;user-select:none;white-space:nowrap;text-shadow:1px 1px 0 #000;vertical-align:middle}
 .methods-table th:first-child{text-align:left}
 .methods-table th:hover{color:var(--gold)}
@@ -104,21 +108,81 @@ td.num{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
 #no-player p{margin-bottom:.5rem}
 
 /* Responsive */
+@media(max-width:900px){
+  .methods-table .hide-tablet{display:none}
+  .methods-table{font-size:.78rem}
+  .methods-table th,.methods-table td{padding:.4rem .3rem}
+}
 @media(max-width:768px){
   #stats-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
   .methods-header{flex-direction:column;align-items:flex-start}
-  .methods-table{font-size:.78rem}
-  .methods-table col.col-method{width:30%}
-  .methods-table col.col-level{width:8%}
-  .methods-table col.col-xp{width:12%}
-  .methods-table col.col-cost{width:13%}
-  .methods-table col.col-gpxp{width:12%}
-  .methods-table col.col-net{width:12%}
-  .methods-table col.col-actions{width:13%}
+  .methods-table{font-size:.75rem}
+  .custom-xp-row{gap:.5rem}
+  .custom-xp-row label{font-size:.8rem}
+  .custom-xp-row input{width:65px;padding:.25rem .4rem;font-size:.8rem}
+}
+@media(max-width:600px){
+  /* Table: switch to auto layout so hidden cols don't waste space */
+  .methods-table{font-size:.72rem;table-layout:auto}
+  .methods-table .hide-mobile{display:none}
+  .methods-table .hide-tablet{display:none}
+  .methods-table th,.methods-table td{padding:.4rem .3rem}
+  .materials{display:none}
+  .method-name{font-size:.75rem;line-height:1.25;word-break:break-word}
+
+  /* Header & controls */
+  h1{font-size:1.2rem;margin-bottom:.4rem!important}
+  h2{font-size:1.05rem}
+  .container{padding:.5rem}
+  header{padding:.5rem 0 .7rem}
+  header p{font-size:.72rem!important;margin-bottom:.5rem!important}
+  .osrs-logo{width:min(220px,60vw)!important;margin-bottom:.2rem!important}
+  #price-status{font-size:.68rem;margin-top:.3rem}
+  #no-player{padding:1rem .5rem}
+  #no-player h2{font-size:.95rem;margin-bottom:.2rem}
+  #no-player p{font-size:.78rem}
+  .search-row{flex-direction:row;align-items:stretch;gap:.3rem;padding:0 .3rem}
+  .search-row input{flex:1;min-width:0;padding:.45rem .6rem;font-size:.85rem;width:auto}
+  .search-row button{padding:.45rem .8rem;font-size:.85rem;white-space:nowrap}
+
+  /* Methods section */
+  #methods-section{padding:.7rem;border-width:2px}
+  .methods-header{gap:.5rem;margin-bottom:.6rem}
+  .methods-controls{gap:.5rem;width:100%}
+  .methods-controls label{font-size:.78rem}
+  .methods-controls select{font-size:.78rem;flex:1;min-width:0}
+  .methods-controls input[type=number]{width:50px;font-size:.78rem;padding:.25rem .3rem}
+
+  /* Custom XP inputs - stack vertically on small screens */
+  .custom-xp-row{flex-direction:row;flex-wrap:wrap;gap:.4rem .6rem}
+  .custom-xp-row label{font-size:.78rem;flex:1 1 auto;min-width:0}
+  .custom-xp-row input{width:55px;padding:.2rem .3rem;font-size:.78rem}
+
+  /* Bonus toggles */
+  .bonus-toggles{gap:.3rem}
+  .bonus-toggles label{font-size:.72rem;padding:.2rem .4rem}
+
+  /* XP info */
+  #xp-info{padding:.5rem .6rem;gap:.3rem .8rem;font-size:.78rem;flex-direction:row;flex-wrap:wrap}
+
+  /* Skill tabs - horizontal scroll strip on mobile */
+  .skill-tabs{gap:.25rem!important;margin:.8rem 0 .3rem!important;flex-wrap:nowrap!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;padding-bottom:.4rem;scrollbar-width:thin}
+  .skill-tab{padding:.3rem .5rem;font-size:.72rem;gap:.2rem;flex-shrink:0;white-space:nowrap}
+  .skill-tab img{width:16px;height:16px}
+
+  /* Custom XP row */
+  .custom-xp-row{gap:.3rem .4rem;align-items:center;flex-wrap:wrap}
+  .custom-xp-row label{font-size:.72rem;white-space:nowrap;flex:0 0 auto}
+  .custom-xp-row input{width:46px!important;padding:.2rem .2rem;font-size:.72rem}
+
+  /* Category headers */
+  .category-header{font-size:.82rem;padding:.35rem .1rem;margin-top:.5rem}
 }
 @media(max-width:480px){
   #stats-grid{grid-template-columns:repeat(3,1fr)}
-  #xp-info{flex-direction:column;gap:.4rem}
+  /* Further compact the XP info */
+  #xp-info{font-size:.72rem;gap:.2rem .6rem}
+  #xp-info div{white-space:nowrap}
 }
 
 /* Tabs for browsing without player */
@@ -131,6 +195,17 @@ td.num{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
 .refresh-btn{background:#21180f;border:2px ridge var(--panel-border);color:var(--muted);padding:.2rem .6rem;border-radius:2px;cursor:pointer;font-size:.75rem;margin-left:.5rem;font-family:inherit}
 .refresh-btn:hover{color:var(--gold);border-color:var(--gold)}
 
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.hide-tablet{display:table-cell}
+.bonus-toggles{display:flex;flex-wrap:wrap;gap:.4rem .8rem;margin-bottom:.6rem}
+.bonus-toggles:empty{display:none}
+.bonus-toggles label{color:var(--muted);font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:.3rem;background:rgba(216,189,134,.06);border:1px solid var(--panel-border);border-radius:2px;padding:.25rem .6rem}
+.bonus-toggles label:hover{border-color:var(--gold);color:var(--text)}
+.bonus-toggles input:checked+span{color:var(--positive)}
+.custom-xp-row{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;margin-bottom:.5rem}
+.custom-xp-row label{color:var(--muted);font-size:.85rem;display:flex;align-items:center;gap:.3rem}
+.custom-xp-row input{background:#0f0b07;border:2px ridge var(--panel-border);color:var(--text);padding:.3rem .5rem;border-radius:2px;width:80px;font-size:.85rem;font-family:inherit}
+.custom-xp-row input:focus{border-color:var(--gold);outline:none}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--panel-border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
@@ -180,9 +255,18 @@ td.num{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
           <option value="gpxp">Sort: GP/XP</option>
           <option value="xp">Sort: XP/Action</option>
           <option value="cost">Sort: Cost</option>
+          <option value="xphr">Sort: XP/hr</option>
+          <option value="time">Sort: Time</option>
+          <option value="gphr">Sort: GP/hr</option>
         </select>
       </div>
     </div>
+    <div class="custom-xp-row" id="custom-xp-row">
+      <label>Current lvl: <input type="number" id="current-level" min="1" max="98" placeholder="1"></label>
+      <label>or XP: <input type="number" id="current-xp" min="0" max="200000000" placeholder="0"></label>
+      <label>XP bonus: <input type="number" id="xp-bonus" min="0" max="100" value="0" step="0.5" style="width:55px">%</label>
+    </div>
+    <div id="bonus-toggles" class="bonus-toggles"></div>
     <div id="xp-info"></div>
     <div id="methods-container"></div>
   </section>
@@ -1759,6 +1843,7 @@ let selectedSkill = null;
 let pricesLoaded = false;
 const PRICE_API_URL = 'https://prices.runescape.wiki/api/v1/osrs/latest';
 const MATERIAL_COST_MULTIPLIER = 1.05;
+const SELL_MULTIPLIER = 0.95 * 0.98; // 5% under GE price + 2% sales tax
 
 // ── API: Fetch Prices ──
 async function fetchPrices(){
@@ -1779,7 +1864,7 @@ async function fetchPrices(){
     }
     pricesLoaded = true;
     const now = new Date();
-    statusEl.innerHTML = `RuneLite/Wiki prices loaded (${Object.keys(prices).length.toLocaleString()} items) &mdash; material costs include a 5% buy buffer &mdash; ${now.toLocaleTimeString()} <button class="refresh-btn" onclick="fetchPrices()">Refresh</button>`;
+    statusEl.innerHTML = `RuneLite/Wiki prices loaded (${Object.keys(prices).length.toLocaleString()} items) &mdash; 5% buy buffer + 2% GE sales tax on sells &mdash; ${now.toLocaleTimeString()} <button class="refresh-btn" onclick="fetchPrices()">Refresh</button>`;
     if(selectedSkill) renderMethods(selectedSkill);
   } catch(e){
     statusEl.textContent = 'Failed to load prices: '+e.message+'. Costs will show as N/A.';
@@ -1985,7 +2070,7 @@ function calcMethodCost(method){
   for(const out of method.outputs){
     const p = getPrice(out.id);
     if(p===null){hasUnknown=true;continue;}
-    outputValue += p * out.qty;
+    outputValue += p * out.qty * SELL_MULTIPLIER;
   }
   const netCost = inputCost - outputValue;
   const gpPerXp = method.xp > 0 ? netCost / method.xp : 0;
@@ -2043,6 +2128,8 @@ function renderSkillTabs(){
 // ── UI: Select Skill & Render Methods ──
 function selectSkill(skill){
   selectedSkill = skill;
+  // Hide the "no player" prompt when a skill is selected
+  document.getElementById('no-player').classList.add('hidden');
   // Update active states
   document.querySelectorAll('.skill-card,.skill-tab').forEach(el=>{
     el.classList.toggle('active',el.textContent.includes(skill));
@@ -2053,9 +2140,11 @@ function selectSkill(skill){
 function renderMethods(skill){
   const section = document.getElementById('methods-section');
   if(skill === 'Overall'){
+    renderBonusToggles(null);
     renderOverallMethods();
     return;
   }
+  renderBonusToggles(skill);
   const methods = METHODS.filter(m=>m.skill===skill);
   if(methods.length===0){
     section.classList.remove('hidden');
@@ -2067,21 +2156,24 @@ function renderMethods(skill){
   section.classList.remove('hidden');
   document.getElementById('skill-title').textContent = skill + ' Training Methods';
 
-  // XP Info
+  // XP Info — use custom input, then player data, then nothing
   const xpInfoEl = document.getElementById('xp-info');
-  const playerSkill = playerData?.skills[skill];
+  const customSkill = getCustomXp(skill);
+  const playerSkill = customSkill;
   const targetLvl = Math.min(99, Math.max(2, parseInt(document.getElementById('target-level').value)||99));
+  const xpBonus = getXpBonus();
   if(playerSkill){
     const currentXp = playerSkill.xp;
     const targetXp = xpForLevel(targetLvl);
     const remaining = Math.max(0, targetXp - currentXp);
+    const bonusStr = xpBonus > 0 ? ` <span style="color:var(--positive)">(+${(xpBonus*100).toFixed(1)}% XP bonus)</span>` : '';
     xpInfoEl.innerHTML = `
       <div><span>Level:</span> <strong>${playerSkill.level}</strong></div>
       <div><span>Current XP:</span> <strong>${currentXp.toLocaleString()}</strong></div>
-      <div><span>XP to ${targetLvl}:</span> <strong>${remaining.toLocaleString()}</strong></div>
+      <div><span>XP to ${targetLvl}:</span> <strong>${remaining.toLocaleString()}</strong>${bonusStr}</div>
       <div><span>Target XP:</span> <strong>${targetXp.toLocaleString()}</strong></div>`;
   } else {
-    xpInfoEl.innerHTML = '<span>Look up a player to see personalized XP calculations</span>';
+    xpInfoEl.innerHTML = '<span>Enter a current level above, or look up a player, to see personalized XP calculations</span>';
   }
 
   // Filter & sort
@@ -2089,7 +2181,19 @@ function renderMethods(skill){
   const sortBy = document.getElementById('sort-by').value;
   let filtered = methods.map(m=>{
     const calc = calcMethodCost(m);
-    return {...m,...calc};
+    const xphr = estimateXphr(m);
+    const effectiveXp = m.xp * (1 + xpBonus);
+    let _time = null;
+    if(xphr && effectiveXp > 0 && playerSkill){
+      const remaining = Math.max(0, xpForLevel(targetLvl) - playerSkill.xp);
+      _time = remaining / (xphr * (1 + xpBonus));
+    }
+    let _gphr = null;
+    if(xphr && effectiveXp > 0 && !calc.hasUnknown && !calc.noMarketItems){
+      const actionsPerHr = (xphr * (1 + xpBonus)) / effectiveXp;
+      _gphr = -calc.netCost * actionsPerHr;
+    }
+    return {...m,...calc, _xphr:xphr, _time, _gphr};
   });
   if(filterLevel && playerSkill){
     filtered = filtered.filter(m=>m.level<=playerSkill.level);
@@ -2099,6 +2203,9 @@ function renderMethods(skill){
     case 'gpxp': filtered.sort((a,b)=>(a.variableCost||a.hasUnknown)-(b.variableCost||b.hasUnknown) || a.gpPerXp-b.gpPerXp); break;
     case 'xp': filtered.sort((a,b)=>b.xp-a.xp); break;
     case 'cost': filtered.sort((a,b)=>(a.variableCost||a.hasUnknown)-(b.variableCost||b.hasUnknown) || a.netCost-b.netCost); break;
+    case 'xphr': filtered.sort((a,b)=>(b._xphr||0)-(a._xphr||0)); break;
+    case 'time': filtered.sort((a,b)=>(a._time||Infinity)-(b._time||Infinity)); break;
+    case 'gphr': filtered.sort((a,b)=>(b._gphr||0)-(a._gphr||0)); break;
     default: filtered.sort((a,b)=>a.level-b.level);
   }
 
@@ -2132,7 +2239,7 @@ function renderOverallMethods(){
   const section = document.getElementById('methods-section');
   section.classList.remove('hidden');
   document.getElementById('skill-title').textContent = 'Overall Top 40 Net GP/Action';
-  document.getElementById('xp-info').innerHTML = '<span>Best current profit per action across all methods using live RuneLite/Wiki prices. Material costs include the 5% buy buffer.</span>';
+  document.getElementById('xp-info').innerHTML = '<span>Best current profit per action across all methods using live RuneLite/Wiki prices. Includes 5% buy buffer and 2% GE sales tax on sells.</span>';
 
   const filterLevel = document.getElementById('filter-level').checked;
   const container = document.getElementById('methods-container');
@@ -2151,15 +2258,114 @@ function renderOverallMethods(){
   container.appendChild(buildMethodsTable(ranked.slice(0,40), null, 99, {showSkill:true}));
 }
 
+// ── XP/hr Estimation ──
+const SKILL_RATES = {
+  'Potions':2500,'Cleaning Herbs':2800,'Swamp Tars':2500,'Divine Potions':2500,
+  'Gem Cutting':2800,'Glass':2000,'Spinning':1500,
+  'Smelting':900,'Blast Furnace':4600,'Platebodies':180,'Dart Tips':600,'Unfinished Bolts':600,
+  'Knives':600,
+  'Dragonhide':1800,'Leather':1800,'Dragonhide Shields':1200,'Jewellery':1800,'Silver':1500,
+  'Battlestaves':1400,'Pottery':1400,
+  'Bows':1500,'Stringing':1500,'Crossbow Stocks':1500,'Crossbows':1200,
+  'Darts':2700,'Arrows':2700,'Ammo':2700,'Bolt Tipping':2700,'Amethyst':2700,
+  'Shields':1500,'Javelins':2700,
+  'Burying':1800,'Ashes':1800,'Gilded Altar':500,'Chaos Altar':500,'Ensouled Heads':200,
+  'Furniture':420,'Planks':420,'Mahogany Homes':6,'Garden':420,'Costume Room':420,
+  'Runes':110,'Combination Runes':110,
+};
+const COOKING_RATE = 1350;
+const FM_LOG_RATE = 500;
+
+function estimateXphr(method){
+  if(method.xphr) return method.xphr;
+  const notes = (method.notes||'');
+  const match = notes.match(/~?([\d,.]+)\s*k\s*xp\s*\/\s*hr/i);
+  if(match) return parseFloat(match[1].replace(/,/g,'')) * 1000;
+  const matchM = notes.match(/~?([\d,.]+)\s*[Mm]\s*xp\s*\/\s*hr/i);
+  if(matchM) return parseFloat(matchM[1].replace(/,/g,'')) * 1000000;
+  if(SKILL_RATES[method.category]) return method.xp * SKILL_RATES[method.category];
+  if(method.skill==='Cooking' && ['Fish','Other','Pies','Pizzas'].includes(method.category)) return method.xp * COOKING_RATE;
+  if(method.skill==='Firemaking' && method.category==='Logs') return method.xp * FM_LOG_RATE;
+  return null;
+}
+
+function formatXphr(v){ if(!v) return '-'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; if(v>=1e3) return (v/1e3).toFixed(0)+'K'; return Math.round(v).toLocaleString(); }
+function formatTime(hours){
+  if(!hours || hours<=0 || !isFinite(hours)) return '-';
+  if(hours<1) return Math.ceil(hours*60)+'m';
+  if(hours<100) return hours.toFixed(1)+'h';
+  return (hours/24).toFixed(1)+'d';
+}
+function formatGphr(v){ if(!v || !isFinite(v)) return '-'; const abs=Math.abs(v); const sign=v>0?'+':'-'; if(abs>=1e6) return sign+(abs/1e6).toFixed(1)+'M'; if(abs>=1e3) return sign+(abs/1e3).toFixed(0)+'K'; return sign+Math.round(abs); }
+
+// ── Bonus XP Presets ──
+const SKILL_BONUSES = {
+  Woodcutting:[{id:'lumberjack',name:'Lumberjack outfit',bonus:0.025}],
+  Mining:[{id:'prospector',name:'Prospector outfit',bonus:0.025}],
+  Fishing:[{id:'angler',name:'Angler outfit',bonus:0.025}],
+  Firemaking:[{id:'pyromancer',name:'Pyromancer outfit',bonus:0.025}],
+  Farming:[{id:'farmer',name:"Farmer's outfit",bonus:0.025}],
+  Herblore:[{id:'botanist',name:"Botanist's outfit",bonus:0.025}],
+};
+let activeBonuses = {};
+
+function renderBonusToggles(skill){
+  const container = document.getElementById('bonus-toggles');
+  container.innerHTML = '';
+  const bonuses = SKILL_BONUSES[skill] || [];
+  for(const b of bonuses){
+    const label = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !!activeBonuses[b.id];
+    cb.addEventListener('change',()=>{
+      activeBonuses[b.id] = cb.checked ? b.bonus : 0;
+      updateBonusInput();
+      if(selectedSkill) renderMethods(selectedSkill);
+    });
+    const span = document.createElement('span');
+    span.textContent = b.name + ' (+' + (b.bonus*100).toFixed(1) + '%)';
+    label.appendChild(cb);
+    label.appendChild(span);
+    container.appendChild(label);
+  }
+}
+
+function updateBonusInput(){
+  let total = 0;
+  for(const v of Object.values(activeBonuses)) total += (v||0);
+  const inp = document.getElementById('xp-bonus');
+  if(total > 0 && parseFloat(inp.value) === 0) inp.value = (total*100).toFixed(1);
+}
+
+function getCustomXp(skill){
+  const lvlInp = document.getElementById('current-level');
+  const xpInp = document.getElementById('current-xp');
+  const playerSkill = playerData?.skills?.[skill];
+  const customXpVal = parseInt(xpInp.value);
+  if(customXpVal > 0) return {level: levelForXp(customXpVal), xp: customXpVal};
+  const customLvl = parseInt(lvlInp.value);
+  if(customLvl >= 1 && customLvl <= 98) return {level: customLvl, xp: xpForLevel(customLvl)};
+  if(playerSkill) return playerSkill;
+  return null;
+}
+
+function getXpBonus(){
+  return parseFloat(document.getElementById('xp-bonus').value) / 100 || 0;
+}
+
 function buildMethodsTable(methods, playerSkill, targetLvl, options={}){
   const table = document.createElement('table');
   table.className = 'methods-table';
+  const xpBonus = getXpBonus();
   table.innerHTML = `<colgroup>
     <col class="col-method"><col class="col-level"><col class="col-xp">
-    <col class="col-cost"><col class="col-gpxp"><col class="col-net"><col class="col-actions">
+    <col class="col-cost"><col class="col-gpxp"><col class="col-net">
+    <col class="col-xphr"><col class="col-actions"><col class="col-time"><col class="col-totalcost"><col class="col-gphr">
   </colgroup><thead><tr>
-    <th>Method</th><th>Lvl</th><th>XP/Action</th>
-    <th>Cost/Action</th><th>GP/XP</th><th>Net GP/Action</th><th>Actions to ${targetLvl}</th>
+    <th>Method</th><th>Lvl</th><th class="hide-mobile">XP/Act</th>
+    <th>Cost/Act</th><th class="hide-tablet">GP/XP</th><th class="hide-tablet">Net GP/Act</th>
+    <th class="hide-mobile">XP/hr</th><th class="hide-tablet">Actions</th><th>Time</th><th>Total GP</th><th class="hide-mobile">GP/hr</th>
   </tr></thead>`;
   const tbody = document.createElement('tbody');
 
@@ -2176,17 +2382,41 @@ function buildMethodsTable(methods, playerSkill, targetLvl, options={}){
     const netStr = m.hasUnknown ? 'N/A' : (m.noMarketItems ? 'Free' : formatNetGp(netGp));
     const netClass = m.hasUnknown || m.noMarketItems ? 'neutral' : (netGp > 0 ? 'positive' : (netGp < 0 ? 'negative' : 'neutral'));
 
+    const effectiveXp = m.xp * (1 + xpBonus);
     let actionsStr = '-';
-    let totalCostStr = '';
+    let totalGpStr = '-';
+    let totalGpClass = 'neutral';
+    let timeStr = '-';
+    let gphrStr = '-';
+    let gphrClass = 'neutral';
     const xpStr = m.xp > 0 ? m.xp.toLocaleString() : (['Weapons','Armour','Bows','Crossbows','Arrows','Bolts'].includes(m.category) ? 'Gear' : 'Avg');
-    if(m.xp > 0){
+    const rawXphr = estimateXphr(m);
+    const xphr = rawXphr ? rawXphr * (1 + xpBonus) : null;
+    const xphrStr = formatXphr(xphr);
+
+    if(effectiveXp > 0){
       const currentXp = playerSkill ? playerSkill.xp : 0;
       const remaining = Math.max(0, xpForLevel(targetLvl) - currentXp);
-      const actions = Math.ceil(remaining / m.xp);
+      const actions = Math.ceil(remaining / effectiveXp);
       actionsStr = actions.toLocaleString();
+      if(xphr && xphr > 0){
+        const hours = remaining / xphr;
+        timeStr = formatTime(hours);
+      }
       if(!m.hasUnknown && !m.noMarketItems && m.netCost !== 0){
         const totalCost = actions * m.netCost;
-        totalCostStr = ` (${formatGp(totalCost)})`;
+        const totalNet = -totalCost;
+        totalGpStr = formatNetGp(totalNet);
+        totalGpClass = totalNet > 0 ? 'positive' : (totalNet < 0 ? 'negative' : 'neutral');
+        if(xphr && xphr > 0){
+          const actionsPerHr = xphr / effectiveXp;
+          const gpPerHr = -m.netCost * actionsPerHr;
+          gphrStr = formatGphr(gpPerHr);
+          gphrClass = gpPerHr > 0 ? 'positive' : (gpPerHr < 0 ? 'negative' : 'neutral');
+        }
+      } else if(m.noMarketItems){
+        totalGpStr = 'Free';
+        gphrStr = 'Free';
       }
     }
 
@@ -2199,7 +2429,7 @@ function buildMethodsTable(methods, playerSkill, targetLvl, options={}){
     }
     for(const out of m.outputs){
       const p = getPrice(out.id);
-      const pStr = p!==null ? ` @${formatGp(p)}` : '';
+      const pStr = p!==null ? ` @${formatGp(p * SELL_MULTIPLIER)}` : '';
       matParts.push(`→ ${out.qty > 1 ? out.qty+'× ':''}${out.name}${pStr}`);
     }
     const matStr = matParts.length > 0 ? matParts.join(' + ') : (m.noMarketItems ? 'No direct item cost' : (m.notes||'No items'));
@@ -2208,15 +2438,22 @@ function buildMethodsTable(methods, playerSkill, targetLvl, options={}){
     tr.innerHTML = `
       <td><div class="method-name">${displayName}</div><div class="materials">${matStr}${m.notes&&matParts.length?' | '+m.notes:''}</div></td>
       <td class="num">${m.level}</td>
-      <td class="num">${xpStr}</td>
+      <td class="num hide-mobile">${xpStr}</td>
       <td class="num ${costClass}">${costStr}</td>
-      <td class="num ${gpxpClass}">${gpxpStr}</td>
-      <td class="num ${netClass}">${netStr}</td>
-      <td class="num">${actionsStr}<span style="font-size:.7rem;color:var(--muted)">${totalCostStr}</span></td>`;
+      <td class="num hide-tablet ${gpxpClass}">${gpxpStr}</td>
+      <td class="num hide-tablet ${netClass}">${netStr}</td>
+      <td class="num hide-mobile">${xphrStr}</td>
+      <td class="num hide-tablet">${actionsStr}</td>
+      <td class="num">${timeStr}</td>
+      <td class="num ${totalGpClass}">${totalGpStr}</td>
+      <td class="num hide-mobile ${gphrClass}">${gphrStr}</td>`;
     tbody.appendChild(tr);
   }
   table.appendChild(tbody);
-  return table;
+  const wrap = document.createElement('div');
+  wrap.className = 'table-wrap';
+  wrap.appendChild(table);
+  return wrap;
 }
 
 // ── Formatters ──
@@ -2266,6 +2503,17 @@ document.getElementById('sort-by').addEventListener('change',()=>{
   if(selectedSkill) renderMethods(selectedSkill);
 });
 document.getElementById('target-level').addEventListener('change',()=>{
+  if(selectedSkill) renderMethods(selectedSkill);
+});
+document.getElementById('current-level').addEventListener('input',()=>{
+  document.getElementById('current-xp').value = '';
+  if(selectedSkill) renderMethods(selectedSkill);
+});
+document.getElementById('current-xp').addEventListener('input',()=>{
+  document.getElementById('current-level').value = '';
+  if(selectedSkill) renderMethods(selectedSkill);
+});
+document.getElementById('xp-bonus').addEventListener('input',()=>{
   if(selectedSkill) renderMethods(selectedSkill);
 });
 
